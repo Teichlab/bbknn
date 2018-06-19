@@ -32,8 +32,10 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 	n_pcs : ``int``, optional (default 50)
 		How many principal components to use in the analysis.
 	scale_distance : ``Boolean``, optional (default False) 
-		If True, lower the lowest across-batch distance to match the highest within-batch 
-		neighbour\'s distance for each cell if needed.
+		If True, optionally lower the across-batch distances on a per-cell, per-batch basis to make
+		the closest neighbour match the furthest within-batch neighbour. 
+		May help smooth out very severe batch effects with a risk of overly 
+		connecting the cells.
 	n_jobs : ``int`` or ``None``, optional (default ``None``)
 		Parallelise neighbour identification when using an Euclidean distance metric, 
 		if ``None`` use all cores. Does nothing with a different metric.

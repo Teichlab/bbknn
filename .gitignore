@@ -1,2 +1,3 @@
 .DS_Store
-python_module/docs/_build
+docs/_build
+bbknn/__pycache__
