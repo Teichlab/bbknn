@@ -7,18 +7,36 @@ from scipy.spatial import cKDTree
 from sklearn.neighbors import KDTree
 from scanpy.neighbors import compute_connectivities_umap
 
-def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean', max_pc=50, scale_distance=False, n_jobs=None):
+def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean', n_pcs=50, scale_distance=False, n_jobs=None):
 	'''
 	Batch balanced KNN, identifying the top neighbours of each cell within each batch separately.
+	For use in the scanpy workflow as an alternative to ``scanpi.api.pp.neighbors``.
+	Similarly short run time (when using the default Euclidean metric) while correcting batch effect.
 	
-	Input:
-		* adata - AnnData object, with the PCA computed and stored in .obsm["X_pca"]
-		* batch_key - adata.obs[] column name discriminating between your batches. Default: "batch"
-		* neighbors_within_batch - how many top neighbours to report for each batch; total number of neighbours will be this number times the number of batches. Default: 3
-		* metric - what distance metric to use: "euclidean", "manhattan", "chebyshev", or parameterised sklearn.neighbors.DistanceMetric for "minkowski", "wminkowski", "seuclidean" or "mahalanobis". Default: "euclidean"
-		* max_pc - how many principal components to use in the analysis. Default: 50
-		* scale_distance - if True, scale the lowest across-batch distance to match the highest within-batch neighbour\'s distance for each cell. Default: False
-		* n_jobs - parallelise neighbour identification when using an Euclidean distance metric, if None use all cores. Default: None
+	Input
+	-----
+	adata : ``AnnData``
+		Needs the PCA computed and stored in ``adata.obsm["X_pca"]``.
+	batch_key : ``str``, optional (default "batch")
+		``adata.obs`` column name discriminating between your batches.
+	neighbors_within_batch : ``int``, optional (default 3)
+		How many top neighbours to report for each batch; total number of neighbours 
+		will be this number times the number of batches.
+	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default "euclidean")
+		What distance metric to use: "euclidean", "manhattan", "chebyshev", or 
+		parameterised ``sklearn.neighbors.DistanceMetric`` for "minkowski", "wminkowski", 
+		"seuclidean" or "mahalanobis".
+		
+		>>> from sklearn.neighbors import DistanceMetric
+		>>> pass_this_as_metric = DistanceMetric.get_metric('minkowski',p=3)
+	n_pcs : ``int``, optional (default 50)
+		How many principal components to use in the analysis.
+	scale_distance : ``Boolean``, optional (default False) 
+		If True, scale the lowest across-batch distance to match the highest within-batch 
+		neighbour\'s distance for each cell if it\'s higher.
+	n_jobs : ``int`` or ``None``, optional (default ``None``)
+		Parallelise neighbour identification when using an Euclidean distance metric, 
+		if ``None`` use all cores. Does nothing with a different metric.
 	'''
 	logg.info('computing batch balanced neighbors', r=True)
 	#basic sanity checks to begin
@@ -47,9 +65,9 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 		ind_to = np.arange(adata.shape[0])[mask_to]
 		#create the cKDTree/KDTree, depending on the metric
 		if metric == 'euclidean':
-			ckd = cKDTree(adata.obsm['X_pca'][mask_to,:max_pc])
+			ckd = cKDTree(adata.obsm['X_pca'][mask_to,:n_pcs])
 		else:
-			ckd = KDTree(adata.obsm['X_pca'][mask_to,:max_pc],metric=metric)
+			ckd = KDTree(adata.obsm['X_pca'][mask_to,:n_pcs],metric=metric)
 		for from_ind in range(len(batches)):
 			#this is the batch that will have its neighbours identified
 			#repeat the mask/row number getting
@@ -58,9 +76,9 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 			ind_from = np.arange(adata.shape[0])[mask_from]
 			#fish the neighbours out, getting a (distances, indices) tuple back
 			if metric == 'euclidean':
-				ckdout = ckd.query(x=adata.obsm['X_pca'][mask_from,:max_pc], k=neighbors_within_batch, n_jobs=n_jobs)
+				ckdout = ckd.query(x=adata.obsm['X_pca'][mask_from,:n_pcs], k=neighbors_within_batch, n_jobs=n_jobs)
 			else:
-				ckdout = ckd.query(adata.obsm['X_pca'][mask_from,:max_pc], k=neighbors_within_batch)
+				ckdout = ckd.query(adata.obsm['X_pca'][mask_from,:n_pcs], k=neighbors_within_batch)
 			#the identified indices are relative to the subsetted PCA matrix
 			#so we need to convert it back to the original adata row numbers
 			for i in range(ckdout[1].shape[0]):
