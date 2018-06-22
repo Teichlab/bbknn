@@ -116,7 +116,7 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 	adata.uns['neighbors']['params'] = {'n_neighbors': knn_indices.shape[1], 'method': 'umap'}
 	adata.uns['neighbors']['distances'] = dist
 	adata.uns['neighbors']['connectivities'] = cnts
-	logg.info('	finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+	logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
 	logg.hint(
 		'added to `.uns[\'neighbors\']`\n'
 		'    \'distances\', weighted adjacency matrix\n'
