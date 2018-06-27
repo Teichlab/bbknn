@@ -7,7 +7,7 @@ from scipy.spatial import cKDTree
 from sklearn.neighbors import KDTree
 from scanpy.neighbors import compute_connectivities_umap
 
-def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean', n_pcs=50, scale_distance=False, n_jobs=None):
+def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean', n_pcs=50, scale_distance=False, n_jobs=None, save_knn=False, copy=False):
 	'''
 	Batch balanced KNN, identifying the top neighbours of each cell within each batch separately.
 	For use in the scanpy workflow as an alternative to ``scanpi.api.pp.neighbors``.
@@ -17,22 +17,22 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 	-----
 	adata : ``AnnData``
 		Needs the PCA computed and stored in ``adata.obsm["X_pca"]``.
-	batch_key : ``str``, optional (default "batch")
+	batch_key : ``str``, optional (default: "batch")
 		``adata.obs`` column name discriminating between your batches.
-	neighbors_within_batch : ``int``, optional (default 3)
+	neighbors_within_batch : ``int``, optional (default: 3)
 		How many top neighbours to report for each batch; total number of neighbours 
 		will be this number times the number of batches.
-	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default "euclidean")
+	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default: "euclidean")
 		What distance metric to use: "euclidean", "manhattan", "chebyshev", or 
 		parameterised ``sklearn.neighbors.DistanceMetric`` for "minkowski", "wminkowski", 
 		"seuclidean" or "mahalanobis".
 		
 		>>> from sklearn.neighbors import DistanceMetric
 		>>> pass_this_as_metric = DistanceMetric.get_metric('minkowski',p=3)
-	n_pcs : ``int``, optional (default 50)
+	n_pcs : ``int``, optional (default: 50)
 		How many principal components to use in the analysis.
-	scale_distance : ``Boolean``, optional (default False) 
-		If True, optionally lower the across-batch distances on a per-cell, per-batch basis to make
+	scale_distance : ``bool``, optional (default: ``False``) 
+		If ``True``, optionally lower the across-batch distances on a per-cell, per-batch basis to make
 		the closest neighbour be closer to the furthest within-batch neighbour. 
 		May help smooth out very severe batch effects with a risk of overly 
 		connecting the cells. The exact algorithm is as follows:
@@ -41,11 +41,16 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 		
 			if min(corrected_batch) > max(original_batch):
 				corrected_batch += max(original_batch) - min(corrected_batch) + np.std(corrected_batch)
-	n_jobs : ``int`` or ``None``, optional (default ``None``)
+	n_jobs : ``int`` or ``None``, optional (default: ``None``)
 		Parallelise neighbour identification when using an Euclidean distance metric, 
 		if ``None`` use all cores. Does nothing with a different metric.
+	save_knn : ``bool``, optional (default: ``False``)
+		If ``True``, save the indices of the nearest neighbours for each cell in ``adata.uns['bbknn']``.
+	copy: ``bool``, optional (default: ``False``)
+		If ``True``, return a copy instead of writing to the supplied adata.
 	'''
 	logg.info('computing batch balanced neighbors', r=True)
+	adata = adata.copy() if copy else adata
 	#basic sanity checks to begin
 	#is our batch key actually present in the object?
 	if batch_key not in adata.obs:
@@ -116,6 +121,9 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 	newidx = np.argsort(knn_distances,axis=1)
 	knn_indices = knn_indices[np.arange(np.shape(knn_indices)[0])[:,np.newaxis],newidx]
 	knn_distances = knn_distances[np.arange(np.shape(knn_distances)[0])[:,np.newaxis],newidx]
+	#optionally save knn_indices
+	if save_knn:
+		adata.uns['bbknn'] = knn_indices
 	#the rest of the processing is akin to scanpy.api.neighbors()
 	dist, cnts = compute_connectivities_umap(knn_indices, knn_distances, knn_indices.shape[0], knn_indices.shape[1])
 	adata.uns['neighbors'] = {}
@@ -127,3 +135,4 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 		'added to `.uns[\'neighbors\']`\n'
 		'    \'distances\', weighted adjacency matrix\n'
 		'    \'connectivities\', weighted adjacency matrix')
+	return adata if copy else None
