@@ -11,7 +11,7 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 	'''
 	Batch balanced KNN, identifying the top neighbours of each cell within each batch separately.
 	For use in the scanpy workflow as an alternative to ``scanpi.api.pp.neighbors``.
-	Similarly short run time (when using the default Euclidean metric) while correcting batch effect.
+	Similarly short run time (when using the default Euclidean metric) while aligning batches.
 	
 	Input
 	-----
@@ -33,9 +33,14 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 		How many principal components to use in the analysis.
 	scale_distance : ``Boolean``, optional (default False) 
 		If True, optionally lower the across-batch distances on a per-cell, per-batch basis to make
-		the closest neighbour match the furthest within-batch neighbour. 
+		the closest neighbour be closer to the furthest within-batch neighbour. 
 		May help smooth out very severe batch effects with a risk of overly 
-		connecting the cells.
+		connecting the cells. The exact algorithm is as follows:
+		
+		.. code-block:: python
+		
+			if min(corrected_batch) > max(original_batch):
+				corrected_batch += max(original_batch) - min(corrected_batch) + np.std(corrected_batch)
 	n_jobs : ``int`` or ``None``, optional (default ``None``)
 		Parallelise neighbour identification when using an Euclidean distance metric, 
 		if ``None`` use all cores. Does nothing with a different metric.
@@ -105,7 +110,8 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 					col_range = np.arange(j*neighbors_within_batch, (j+1)*neighbors_within_batch)
 					if np.min(knn_distances[ind,col_range]) > scale_value:
 						knn_distances[ind,col_range] = knn_distances[ind,col_range] + \
-								scale_value - np.min(knn_distances[ind,col_range])
+								scale_value - np.min(knn_distances[ind,col_range]) + \
+								np.std(knn_distances[ind,col_range])
 	#sort the neighbours so that they're actually in order from closest to furthest
 	newidx = np.argsort(knn_distances,axis=1)
 	knn_indices = knn_indices[np.arange(np.shape(knn_indices)[0])[:,np.newaxis],newidx]
