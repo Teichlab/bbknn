@@ -46,7 +46,7 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 		if ``None`` use all cores. Does nothing with a different metric.
 	save_knn : ``bool``, optional (default: ``False``)
 		If ``True``, save the indices of the nearest neighbours for each cell in ``adata.uns['bbknn']``.
-	copy: ``bool``, optional (default: ``False``)
+	copy : ``bool``, optional (default: ``False``)
 		If ``True``, return a copy instead of writing to the supplied adata.
 	'''
 	logg.info('computing batch balanced neighbors', r=True)
