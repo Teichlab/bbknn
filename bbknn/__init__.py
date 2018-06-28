@@ -7,7 +7,7 @@ from scipy.spatial import cKDTree
 from sklearn.neighbors import KDTree
 from scanpy.neighbors import compute_connectivities_umap
 
-def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean', n_pcs=50, scale_distance=False, n_jobs=None, save_knn=False, copy=False):
+def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean', n_pcs=50, scale_distance=False, trim=None, n_jobs=None, save_knn=False, copy=False):
 	'''
 	Batch balanced KNN, identifying the top neighbours of each cell within each batch separately.
 	For use in the scanpy workflow as an alternative to ``scanpi.api.pp.neighbors``.
@@ -41,6 +41,8 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 		
 			if min(corrected_batch) > max(original_batch):
 				corrected_batch += max(original_batch) - min(corrected_batch) + np.std(corrected_batch)
+	trim : ``int`` or ``None``, optional (default: ``None``)
+		If not ``None``, trim the neighbours of each cell to these many top connectivities.
 	n_jobs : ``int`` or ``None``, optional (default: ``None``)
 		Parallelise neighbour identification when using an Euclidean distance metric, 
 		if ``None`` use all cores. Does nothing with a different metric.
@@ -120,12 +122,33 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 	#sort the neighbours so that they're actually in order from closest to furthest
 	newidx = np.argsort(knn_distances,axis=1)
 	knn_indices = knn_indices[np.arange(np.shape(knn_indices)[0])[:,np.newaxis],newidx]
-	knn_distances = knn_distances[np.arange(np.shape(knn_distances)[0])[:,np.newaxis],newidx]
+	knn_distances = knn_distances[np.arange(np.shape(knn_distances)[0])[:,np.newaxis],newidx] 
 	#optionally save knn_indices
 	if save_knn:
 		adata.uns['bbknn'] = knn_indices
-	#the rest of the processing is akin to scanpy.api.neighbors()
+	#this part of the processing is akin to scanpy.api.neighbors()
 	dist, cnts = compute_connectivities_umap(knn_indices, knn_distances, knn_indices.shape[0], knn_indices.shape[1])
+	#optional trimming
+	if trim:
+		vals = np.zeros(cnts.shape[0])
+		for i in range(cnts.shape[0]):
+			#Get the row slice, not a copy, only the non zero elements
+			row_array = cnts.data[cnts.indptr[i]: cnts.indptr[i+1]]
+			if row_array.shape[0] <= trim:
+				continue
+			#fish out the threshold value
+			vals[i] = row_array[np.argsort(row_array)[-1*trim]]
+		for iter in range(2):
+			#filter rows, flip, filter columns using the same thresholds
+			for i in range(cnts.shape[0]):
+				#Get the row slice, not a copy, only the non zero elements
+				row_array = cnts.data[cnts.indptr[i]: cnts.indptr[i+1]]
+				if row_array.shape[0] <= trim:
+					continue
+				#apply cutoff
+				row_array[row_array<vals[i]] = 0
+			cnts.eliminate_zeros()
+			cnts = cnts.T.tocsr()
 	adata.uns['neighbors'] = {}
 	adata.uns['neighbors']['params'] = {'n_neighbors': knn_indices.shape[1], 'method': 'umap'}
 	adata.uns['neighbors']['distances'] = dist
