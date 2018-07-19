@@ -7,7 +7,7 @@ from scipy.spatial import cKDTree
 from sklearn.neighbors import KDTree
 from scanpy.neighbors import compute_connectivities_umap
 
-def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean', n_pcs=50, scale_distance=False, trim=None, n_jobs=None, save_knn=False, copy=False):
+def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean', n_pcs=50, scale_distance=False, trim=None, bandwidth=1, local_connectivity=1, n_jobs=None, save_knn=False, copy=False):
 	'''
 	Batch balanced KNN, identifying the top neighbours of each cell within each batch separately.
 	For use in the scanpy workflow as an alternative to ``scanpi.api.pp.neighbors``.
@@ -43,6 +43,12 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 				corrected_batch += max(original_batch) - min(corrected_batch) + np.std(corrected_batch)
 	trim : ``int`` or ``None``, optional (default: ``None``)
 		If not ``None``, trim the neighbours of each cell to these many top connectivities.
+	bandwidth : ``float``, optional (default: 1)
+		``scanpy.neighbors.compute_connectivities_umap`` parameter, higher values result in a
+		gentler slope of the connectivities exponentials (i.e. larger connectivity values being returned)
+	local_connectivity : ``int``, optional (default: 1)
+		``scanpy.neighbors.compute_connectivities_umap`` parameter, how many nearest neighbors of
+		each cell are assumed to be fully connected (and given a connectivity value of 1)
 	n_jobs : ``int`` or ``None``, optional (default: ``None``)
 		Parallelise neighbour identification when using an Euclidean distance metric, 
 		if ``None`` use all cores. Does nothing with a different metric.
@@ -127,7 +133,7 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 	if save_knn:
 		adata.uns['bbknn'] = knn_indices
 	#this part of the processing is akin to scanpy.api.neighbors()
-	dist, cnts = compute_connectivities_umap(knn_indices, knn_distances, knn_indices.shape[0], knn_indices.shape[1])
+	dist, cnts = compute_connectivities_umap(knn_indices, knn_distances, knn_indices.shape[0], knn_indices.shape[1], bandwidth=bandwidth, local_connectivity=local_connectivity)
 	#optional trimming
 	if trim:
 		vals = np.zeros(cnts.shape[0])
