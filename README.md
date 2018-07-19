@@ -8,10 +8,10 @@ As such, BBKNN actively combats this effect by splitting your data into batches 
 
 <p align="center"><img src="figures/batch2.png" alt="BBKNN" width="50%"></p>
 
-## Installation
+## Installation and Documentation
 
-BBKNN is available on pip, and can be easily installed as follows:
+BBKNN depends on Cython, numpy and scanpy. The package is available on pip, and can be easily installed as follows:
 
 	pip3 install bbknn
 
-The package depends on Cython, numpy and scanpy.
+An HTML render of the BBKNN function docstring, detailing all the parameters, can be accessed at [ReadTheDocs](https://bbknn.readthedocs.io/en/latest/).
