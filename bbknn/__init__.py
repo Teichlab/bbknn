@@ -3,11 +3,12 @@ import multiprocessing as mp
 import sys
 from scanpy import settings
 from scanpy import logging as logg
+from annoy import AnnoyIndex
 from scipy.spatial import cKDTree
 from sklearn.neighbors import KDTree
 from scanpy.neighbors import compute_connectivities_umap
 
-def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean', n_pcs=50, scale_distance=False, trim=None, bandwidth=1, local_connectivity=1, n_jobs=None, save_knn=False, copy=False):
+def bbknn(adata, batch_key='batch', neighbors_within_batch=3, n_pcs=50, trim=None, scale_distance=False, approx=False, metric='euclidean', bandwidth=1, local_connectivity=1, n_jobs=None, save_knn=False, copy=False):
 	'''
 	Batch balanced KNN, identifying the top neighbours of each cell within each batch separately.
 	For use in the scanpy workflow as an alternative to ``scanpi.api.pp.neighbors``.
@@ -22,15 +23,11 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 	neighbors_within_batch : ``int``, optional (default: 3)
 		How many top neighbours to report for each batch; total number of neighbours 
 		will be this number times the number of batches.
-	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default: "euclidean")
-		What distance metric to use: "euclidean", "manhattan", "chebyshev", or 
-		parameterised ``sklearn.neighbors.DistanceMetric`` for "minkowski", "wminkowski", 
-		"seuclidean" or "mahalanobis".
-		
-		>>> from sklearn.neighbors import DistanceMetric
-		>>> pass_this_as_metric = DistanceMetric.get_metric('minkowski',p=3)
 	n_pcs : ``int``, optional (default: 50)
 		How many principal components to use in the analysis.
+	trim : ``int`` or ``None``, optional (default: ``None``)
+		If not ``None``, trim the neighbours of each cell to these many top connectivities.
+		May help with population independence and improve the tidiness of clustering.
 	scale_distance : ``bool``, optional (default: ``False``) 
 		If ``True``, optionally lower the across-batch distances on a per-cell, per-batch basis to make
 		the closest neighbour be closer to the furthest within-batch neighbour. 
@@ -41,8 +38,19 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 		
 			if min(corrected_batch) > max(original_batch):
 				corrected_batch += max(original_batch) - min(corrected_batch) + np.std(corrected_batch)
-	trim : ``int`` or ``None``, optional (default: ``None``)
-		If not ``None``, trim the neighbours of each cell to these many top connectivities.
+	approx :  ``bool``, optional (default: ``False``)
+		If ``True``, use annoy's approximate neighbour finding. This results in a quicker run time 
+		for large datasets at a risk of loss of independence of some of the populations. It should
+		be noted that annoy's default metric of choice is "angular", which BBKNN overrides to
+		"euclidean" from its own default metric setting.
+	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default: "euclidean")
+		What distance metric to use. If using ``approx=True``, the options are "euclidean",
+		"angular", "manhattan" and "hamming". Otherwise, the options are "euclidean", 
+		"manhattan", "chebyshev", or parameterised ``sklearn.neighbors.DistanceMetric`` 
+		for "minkowski", "wminkowski", "seuclidean" or "mahalanobis".
+		
+		>>> from sklearn.neighbors import DistanceMetric
+		>>> pass_this_as_metric = DistanceMetric.get_metric('minkowski',p=3)
 	bandwidth : ``float``, optional (default: 1)
 		``scanpy.neighbors.compute_connectivities_umap`` parameter, higher values result in a
 		gentler slope of the connectivities exponentials (i.e. larger connectivity values being returned)
@@ -84,7 +92,13 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 		mask_to = adata.obs[batch_key] == batch_to
 		ind_to = np.arange(adata.shape[0])[mask_to]
 		#create the cKDTree/KDTree, depending on the metric
-		if metric == 'euclidean':
+		if approx:
+			ckd = AnnoyIndex(n_pcs,metric=metric)
+			data = adata.obsm['X_pca'][mask_to,:n_pcs]
+			for i in np.arange(data.shape[0]):
+				ckd.add_item(i,data[i,:])
+			ckd.build(10)
+		elif metric == 'euclidean':
 			ckd = cKDTree(adata.obsm['X_pca'][mask_to,:n_pcs])
 		else:
 			ckd = KDTree(adata.obsm['X_pca'][mask_to,:n_pcs],metric=metric)
@@ -95,7 +109,16 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, metric='euclidean'
 			mask_from = adata.obs[batch_key] == batch_from
 			ind_from = np.arange(adata.shape[0])[mask_from]
 			#fish the neighbours out, getting a (distances, indices) tuple back
-			if metric == 'euclidean':
+			if approx:
+				ckdo_ind = []
+				ckdo_dist = []
+				data = adata.obsm['X_pca'][mask_from,:n_pcs]
+				for i in np.arange(data.shape[0]):
+					holder = ckd.get_nns_by_vector(data[i,:],neighbors_within_batch,include_distances=True)
+					ckdo_ind.append(holder[0])
+					ckdo_dist.append(holder[1])
+				ckdout = (np.asarray(ckdo_dist),np.asarray(ckdo_ind))
+			elif metric == 'euclidean':
 				ckdout = ckd.query(x=adata.obsm['X_pca'][mask_from,:n_pcs], k=neighbors_within_batch, n_jobs=n_jobs)
 			else:
 				ckdout = ckd.query(adata.obsm['X_pca'][mask_from,:n_pcs], k=neighbors_within_batch)
