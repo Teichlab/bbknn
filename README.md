@@ -8,22 +8,27 @@ As such, BBKNN actively combats this effect by splitting your data into batches 
 
 <p align="center"><img src="figures/batch2.png" alt="BBKNN" width="50%"></p>
 
-## Installation and Documentation
+## Installation
 
 BBKNN depends on Cython, numpy, annoy and scanpy. The package is available on pip, and can be easily installed as follows:
 
 	pip3 install bbknn
 
-An HTML render of the BBKNN function docstring, detailing all the parameters, can be accessed at [ReadTheDocs](https://bbknn.readthedocs.io/en/latest/).
+## Usage and Documentation
 
-## Usage
-
-BBKNN is designed to immediately slot into the spot occupied by `scanpy.api.neighbors()` in the [Seurat-inspired scanpy workflow](https://nbviewer.jupyter.org/github/theislab/scanpy_usage/blob/master/170505_seurat/seurat.ipynb). It computes a batch aligned variant of the neighbourhood graph, with its uses within scanpy including clustering, diffusion map pseudotime inference and UMAP visualisation. The basic syntax to run BBKNN on scanpy's AnnData object is as follows:
+BBKNN is designed to immediately slot into the spot occupied by `scanpy.api.neighbors()` in the [Seurat-inspired scanpy workflow](https://nbviewer.jupyter.org/github/theislab/scanpy_usage/blob/master/170505_seurat/seurat.ipynb). It computes a batch aligned variant of the neighbourhood graph, with its uses within scanpy including clustering, diffusion map pseudotime inference and UMAP visualisation. The basic syntax to run BBKNN on scanpy's AnnData object (with PCA computed via `scanpy.api.tl.pca()` is as follows:
 
 	import bbknn
 	bbknn.bbknn(adata)
 
-This requires you to have PCA coordinates stored within the AnnData object. If your dataset is large (e.g. 50,000-100,000 cells), consider setting `approx=True` in your BBKNN call to switch to the more computationally efficient approximate neighbour detection algorithm.
+Alternately, you can just provide a PCA matrix with cells as rows and a matching vector of batch assignments for each of the cells and call BBKNN as follows (with `connectivities` being the primary graph output of interest):
+
+	import bbknn
+	distances, connectivities = bbknn.bbknn_pca_matrix(pca_matrix, batch_list)
+
+If your dataset is large (e.g. 50,000-100,000 cells), consider setting `approx=True` in your BBKNN call to switch to the more computationally efficient approximate neighbour detection algorithm. An HTML render of the BBKNN function docstring, detailing all the parameters, can be accessed at [ReadTheDocs](https://bbknn.readthedocs.io/en/latest/).
+
+## Example Notebooks
 
 The repository also features Jupyter Notebooks capturing a range of biological and simulated examples of BBKNN use, along with comparisons to established batch correction methods. All of the corresponding objects can be downloaded from [ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/](ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/)
 

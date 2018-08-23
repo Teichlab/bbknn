@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name='bbknn',
-	version='1.1.0',
+	version='1.2.0',
 	description='Batch balanced KNN',
 	url='https://github.com/Teichlab/bbknn',
 	packages=find_packages(exclude=['docs', 'figures', 'examples']),
