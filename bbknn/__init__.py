@@ -162,9 +162,10 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, n_pcs=50, trim=Non
 		  scale_distance=False, approx=False, metric='euclidean', bandwidth=1, local_connectivity=1, 
 		  n_jobs=None, save_knn=False, copy=False):
 	'''
-	Batch balanced KNN, identifying the top neighbours of each cell within each batch separately.
+	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
+	each batch separately instead of the entire cell pool with no accounting for batch.
+	Aligns batches in a quick and lightweight manner.
 	For use in the scanpy workflow as an alternative to ``scanpi.api.pp.neighbors()``.
-	Similarly short run time while aligning batches.
 	
 	Input
 	-----
@@ -254,7 +255,7 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 	an AnnData object. Non-data-entry arguments behave the same way as ``bbknn.bbknn()``.
 	Returns a ``(distances, connectivities)`` tuple, like what would have been stored in the AnnData object.
 	The connectivities are the actual neighbourhood graph. If ``save_knn=True``, the tuple also
-	includes the nearest neighbour indices as a third element.
+	includes the nearest neighbour indices for each cell as a third element.
 	
 	Input
 	-----
