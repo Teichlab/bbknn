@@ -1,16 +1,20 @@
 import numpy as np
-import multiprocessing as mp
 import sys
 from scanpy import settings
 from scanpy import logging as logg
 from annoy import AnnoyIndex
-from scipy.spatial import cKDTree
 from sklearn.neighbors import KDTree
+from sklearn.neighbors import DistanceMetric
 from scanpy.neighbors import compute_connectivities_umap
+from scipy.spatial import cKDTree
+try:
+	import faiss
+except ImportError:
+	pass
 
-def create_tree(data,approx,metric):
+def create_tree(data,approx,metric,use_faiss,n_trees):
 	'''
-	Create a cKDTree/KDTree/annoy index for nearest neighbour lookup. All undescribed input
+	Create a faiss/cKDTree/KDTree/annoy index for nearest neighbour lookup. All undescribed input
 	as in ``bbknn.bbknn()``. Returns the resulting index.
 	
 	Input
@@ -22,16 +26,20 @@ def create_tree(data,approx,metric):
 		ckd = AnnoyIndex(data.shape[1],metric=metric)
 		for i in np.arange(data.shape[0]):
 			ckd.add_item(i,data[i,:])
-		ckd.build(10)
+		ckd.build(n_trees)
 	elif metric == 'euclidean':
-		ckd = cKDTree(data)
+		if 'faiss' in sys.modules and use_faiss:
+			ckd = faiss.IndexFlatL2(data.shape[1])
+			ckd.add(data)
+		else:
+			ckd = cKDTree(data)
 	else:
 		ckd = KDTree(data,metric=metric)
 	return ckd
 
-def query_tree(data,ckd,neighbors_within_batch,approx,metric,n_jobs):
+def query_tree(data,ckd,neighbors_within_batch,approx,metric,use_faiss):
 	'''
-	Query the cKDTree/KDTree/annoy index with PCA coordinates from a batch. All undescribed input
+	Query the faiss/cKDTree/KDTree/annoy index with PCA coordinates from a batch. All undescribed input
 	as in ``bbknn.bbknn()``. Returns a tuple of distances and indices of neighbours for each cell
 	in the batch.
 	
@@ -39,7 +47,7 @@ def query_tree(data,ckd,neighbors_within_batch,approx,metric,n_jobs):
 	-----
 	data : ``numpy.array``
 		PCA coordinates of a batch's cells to query.
-	ckd : cKDTree/KDTree/annoy index
+	ckd : faiss/cKDTree/KDTree/annoy index
 	'''
 	if approx:
 		ckdo_ind = []
@@ -50,12 +58,19 @@ def query_tree(data,ckd,neighbors_within_batch,approx,metric,n_jobs):
 			ckdo_dist.append(holder[1])
 		ckdout = (np.asarray(ckdo_dist),np.asarray(ckdo_ind))
 	elif metric == 'euclidean':
-		ckdout = ckd.query(x=data, k=neighbors_within_batch, n_jobs=n_jobs)
+		if 'faiss' in sys.modules and use_faiss:
+			D, I = ckd.search(data, neighbors_within_batch)
+			#sometimes this turns up marginally negative values, just set those to zero
+			D[D<0] = 0
+			#the distance returned by faiss needs to be square rooted to be actual euclidean
+			ckdout = (np.sqrt(D), I)
+		else:
+			ckdout = ckd.query(x=data, k=neighbors_within_batch, n_jobs=-1)
 	else:
 		ckdout = ckd.query(data, k=neighbors_within_batch)
 	return ckdout
 
-def get_graph(pca,batch_list,neighbors_within_batch,n_pcs,approx,metric,n_jobs):
+def get_graph(pca,batch_list,neighbors_within_batch,n_pcs,approx,metric,use_faiss,n_trees):
 	'''
 	Identify the KNN structure to be used in graph construction. All input as in ``bbknn.bbknn()``
 	and ``bbknn.bbknn_pca_matrix()``. Returns a tuple of distances and indices of neighbours for
@@ -63,10 +78,13 @@ def get_graph(pca,batch_list,neighbors_within_batch,n_pcs,approx,metric,n_jobs):
 	'''
 	#get a list of all our batches
 	batches = np.unique(batch_list)
+	#in case we're gonna be faissing, turn the data to float32
+	if metric=='euclidean' and not approx and 'faiss' in sys.modules and use_faiss:
+		pca = pca.astype('float32')
 	#create the output matrices, with the indices as integers and distances as floats
 	knn_distances = np.zeros((pca.shape[0],neighbors_within_batch*len(batches)))
 	knn_indices = np.copy(knn_distances).astype(int)
-	#find the knns using cKDTree/KDTree/annoy
+	#find the knns using faiss/cKDTree/KDTree/annoy
 	#need to compare each batch against each batch (including itself)
 	for to_ind in range(len(batches)):
 		#this is the batch that will be used as the neighbour pool
@@ -75,8 +93,9 @@ def get_graph(pca,batch_list,neighbors_within_batch,n_pcs,approx,metric,n_jobs):
 		batch_to = batches[to_ind]
 		mask_to = batch_list == batch_to
 		ind_to = np.arange(len(batch_list))[mask_to]
-		#create the cKDTree/KDTree/annoy, depending on approx/metric
-		ckd = create_tree(data=pca[mask_to,:n_pcs],approx=approx,metric=metric)
+		#create the faiss/cKDTree/KDTree/annoy, depending on approx/metric
+		ckd = create_tree(data=pca[mask_to,:n_pcs],approx=approx,metric=metric,
+						  use_faiss=use_faiss,n_trees=n_trees)
 		for from_ind in range(len(batches)):
 			#this is the batch that will have its neighbours identified
 			#repeat the mask/row number getting
@@ -86,7 +105,7 @@ def get_graph(pca,batch_list,neighbors_within_batch,n_pcs,approx,metric,n_jobs):
 			#fish the neighbours out, getting a (distances, indices) tuple back
 			ckdout = query_tree(data=pca[mask_from,:n_pcs],ckd=ckd,
 								neighbors_within_batch=neighbors_within_batch,
-								approx=approx,metric=metric,n_jobs=n_jobs)
+								approx=approx,metric=metric,use_faiss=use_faiss)
 			#the identified indices are relative to the subsetted PCA matrix
 			#so we need to convert it back to the original row numbers
 			for i in range(ckdout[1].shape[0]):
@@ -97,35 +116,6 @@ def get_graph(pca,batch_list,neighbors_within_batch,n_pcs,approx,metric,n_jobs):
 			knn_indices[ind_from[:,None],col_range[None,:]] = ckdout[1]
 			knn_distances[ind_from[:,None],col_range[None,:]] = ckdout[0]
 	return knn_distances, knn_indices
-
-def scale_distances(knn_distances,batch_list,neighbors_within_batch):
-	'''
-	Scale the distances from disparate batches to be closer to the cell's batch of origin.
-	Described in detail in ``bbknn.bbknn()``. All undescribed input as in ``bbknn.bbknn()``
-	and ``bbknn.bbknn_pca_matrix()``. Returns a scaled distance array.
-	
-	Input
-	-----
-	knn_distances : ``numpy.array``
-		Array of computed neighbour distances for each cell.
-	'''
-	#get a list of all our batches
-	batches = np.unique(batch_list)
-	for i in range(len(batches)):
-		#where are our same-batch neighbours?
-		inds = np.arange(len(batch_list))[batch_list == batches[i]]
-		source_col_range = np.arange(i*neighbors_within_batch, (i+1)*neighbors_within_batch)
-		for ind in inds:
-			#the maximum observed metric value within the batch for this cell
-			scale_value = np.max(knn_distances[ind,source_col_range])
-			for j in range(len(batches)):
-				#check against the minimum of the other batches, scale within batches if needed
-				col_range = np.arange(j*neighbors_within_batch, (j+1)*neighbors_within_batch)
-				if np.min(knn_distances[ind,col_range]) > scale_value:
-					knn_distances[ind,col_range] = knn_distances[ind,col_range] + \
-							scale_value - np.min(knn_distances[ind,col_range]) + \
-							np.std(knn_distances[ind,col_range])
-	return knn_distances
 
 def trimming(cnts,trim):
 	'''
@@ -158,9 +148,7 @@ def trimming(cnts,trim):
 		cnts = cnts.T.tocsr()
 	return cnts
 
-def bbknn(adata, batch_key='batch', neighbors_within_batch=3, n_pcs=50, trim=None, 
-		  scale_distance=False, approx=False, metric='euclidean', bandwidth=1, local_connectivity=1, 
-		  n_jobs=None, save_knn=False, copy=False):
+def bbknn(adata, batch_key='batch', save_knn=False, copy=False, **kwargs):
 	'''
 	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
 	each batch separately instead of the entire cell pool with no accounting for batch.
@@ -181,38 +169,34 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, n_pcs=50, trim=Non
 	trim : ``int`` or ``None``, optional (default: ``None``)
 		If not ``None``, trim the neighbours of each cell to these many top connectivities.
 		May help with population independence and improve the tidiness of clustering.
-	scale_distance : ``bool``, optional (default: ``False``) 
-		If ``True``, optionally lower the across-batch distances on a per-cell, per-batch basis to make
-		the closest neighbour be closer to the furthest within-batch neighbour. 
-		May help smooth out very severe batch effects with a risk of overly 
-		connecting the cells. The exact algorithm is as follows:
-		
-		.. code-block:: python
-		
-			if min(corrected_batch) > max(original_batch):
-				corrected_batch += max(original_batch) - min(corrected_batch) + np.std(corrected_batch)
-	approx : ``bool``, optional (default: ``False``)
+	approx : ``bool``, optional (default: ``True``)
 		If ``True``, use annoy's approximate neighbour finding. This results in a quicker run time 
-		for large datasets at a risk of loss of independence of some of the populations. It should
-		be noted that annoy's default metric of choice is "angular", which BBKNN overrides to
-		"euclidean" from its own default metric setting.
-	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default: "euclidean")
-		What distance metric to use. If using ``approx=True``, the options are "euclidean",
-		"angular", "manhattan" and "hamming". Otherwise, the options are "euclidean", 
-		"manhattan", "chebyshev", or parameterised ``sklearn.neighbors.DistanceMetric`` 
-		for "minkowski", "wminkowski", "seuclidean" or "mahalanobis".
+		for large datasets while also potentially increasing the degree of batch correction.
+	n_trees : ``int``, optional (default: 10)
+		Only used when ``approx=True``. The number of trees to construct in the annoy forest.
+		More trees give higher precision when querying, at the cost of increased run time and 
+		resource intensity.
+	use_faiss : ``bool``, optional (default: ``True``)
+		If ``approx=False`` and the metric is "euclidean", use the faiss package to compute
+		nearest neighbours if installed. This improves performance at a minor cost to numerical 
+		precision as faiss operates on float32.
+	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default: "angular")
+		What distance metric to use. If using ``approx=True``, the options are "angular",
+		"euclidean", "manhattan" and "hamming". Otherwise, the options are "euclidean", 
+		a member of the ``sklearn.neighbors.KDTree.valid_metrics`` list, or parameterised 
+		``sklearn.neighbors.DistanceMetric`` `objects 
+		<https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.DistanceMetric.html>`_:
 		
-		>>> from sklearn.neighbors import DistanceMetric
-		>>> pass_this_as_metric = DistanceMetric.get_metric('minkowski',p=3)
+		>>> from sklearn import neighbors
+		>>> neighbors.KDTree.valid_metrics
+		['p', 'chebyshev', 'cityblock', 'minkowski', 'infinity', 'l2', 'euclidean', 'manhattan', 'l1']
+		>>> pass_this_as_metric = neighbors.DistanceMetric.get_metric('minkowski',p=3)
 	bandwidth : ``float``, optional (default: 1)
 		``scanpy.neighbors.compute_connectivities_umap`` parameter, higher values result in a
 		gentler slope of the connectivities exponentials (i.e. larger connectivity values being returned)
 	local_connectivity : ``int``, optional (default: 1)
 		``scanpy.neighbors.compute_connectivities_umap`` parameter, how many nearest neighbors of
 		each cell are assumed to be fully connected (and given a connectivity value of 1)
-	n_jobs : ``int`` or ``None``, optional (default: ``None``)
-		Parallelise neighbour identification when using an Euclidean distance metric, 
-		if ``None`` use all cores. Does nothing with a different metric.
 	save_knn : ``bool``, optional (default: ``False``)
 		If ``True``, save the indices of the nearest neighbours for each cell in ``adata.uns['bbknn']``.
 	copy : ``bool``, optional (default: ``False``)
@@ -230,15 +214,13 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, n_pcs=50, trim=Non
 	pca = adata.obsm['X_pca']
 	batch_list = adata.obs[batch_key].values
 	#call BBKNN proper
-	bbknn_out = bbknn_pca_matrix(pca=pca,batch_list=batch_list,neighbors_within_batch=neighbors_within_batch,
-								 n_pcs=n_pcs,trim=trim,scale_distance=scale_distance,approx=approx,
-								 metric=metric,bandwidth=bandwidth,local_connectivity=local_connectivity,
-								 n_jobs=n_jobs,save_knn=save_knn)
+	bbknn_out = bbknn_pca_matrix(pca=pca,batch_list=batch_list,save_knn=save_knn,**kwargs)
 	#optionally save knn_indices
 	if save_knn:
 		adata.uns['bbknn'] = bbknn_out[2]
 	adata.uns['neighbors'] = {}
-	adata.uns['neighbors']['params'] = {'n_neighbors': neighbors_within_batch*len(np.unique(batch_list)), 'method': 'umap'}
+	#we'll have a zero distance for our cell of origin, and nonzero for every other neighbour computed
+	adata.uns['neighbors']['params'] = {'n_neighbors': len(bbknn_out[0][0,:].data)+1, 'method': 'umap'}
 	adata.uns['neighbors']['distances'] = bbknn_out[0]
 	adata.uns['neighbors']['connectivities'] = bbknn_out[1]
 	logg.hint(
@@ -248,8 +230,8 @@ def bbknn(adata, batch_key='batch', neighbors_within_batch=3, n_pcs=50, trim=Non
 	return adata if copy else None
 
 def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None, 
-		  scale_distance=False, approx=False, metric='euclidean', bandwidth=1, local_connectivity=1, 
-		  n_jobs=None, save_knn=False):
+		  approx=True, n_trees=10, use_faiss=True, metric='angular', 
+		  bandwidth=1, local_connectivity=1, save_knn=False):
 	'''
 	Scanpy-independent BBKNN variant that runs on a PCA matrix and list of per-cell batch assignments instead of
 	an AnnData object. Non-data-entry arguments behave the same way as ``bbknn.bbknn()``.
@@ -269,20 +251,19 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 	#do we have the same number of cells in pca and batch_list?
 	if pca.shape[0] != len(batch_list):
 		raise ValueError("Different cell counts indicated by `pca.shape[0]` and `len(batch_list)`.")
-	#find our core total
-	if n_jobs == None:
-		n_jobs = mp.cpu_count()
 	#convert batch_list to np.array of strings for ease of mask making later
 	batch_list = np.asarray([str(i) for i in batch_list])
+	#metric sanity checks
+	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
+		logg.warn('unrecognised metric for type of neighbor calculation, switching to angular')
+		metric = 'angular'
+	elif not (metric=='euclidean' or isinstance(metric,DistanceMetric) or metric in KDTree.valid_metrics):
+		logg.warn('unrecognised metric for type of neighbor calculation, switching to euclidean')
+		metric = 'euclidean'
 	#obtain the batch balanced KNN graph
-	knn_distances, knn_indices = get_graph(pca=pca,batch_list=batch_list,n_pcs=n_pcs,
-										   approx=approx,metric=metric,n_jobs=n_jobs,
+	knn_distances, knn_indices = get_graph(pca=pca,batch_list=batch_list,n_pcs=n_pcs,n_trees=n_trees,
+										   approx=approx,metric=metric,use_faiss=use_faiss,
 										   neighbors_within_batch=neighbors_within_batch)
-	#distance scaling - move the minimum observed metric value for different batches
-	#to the maximum metric value within the same batch as the cell originates from
-	if scale_distance:
-		knn_distances = scale_distances(knn_distances=knn_distances,batch_list=batch_list,
-										neighbors_within_batch=neighbors_within_batch)
 	#sort the neighbours so that they're actually in order from closest to furthest
 	newidx = np.argsort(knn_distances,axis=1)
 	knn_indices = knn_indices[np.arange(np.shape(knn_indices)[0])[:,np.newaxis],newidx]
