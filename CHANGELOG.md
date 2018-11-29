@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.1
+- metric sanity check typo fix
+
 ## 1.3.0
 - optional faiss support
 - default swap to annoy neighbours with angular as the metric, add annoy's `n_trees` parameter

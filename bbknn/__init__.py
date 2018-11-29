@@ -257,7 +257,7 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
 		logg.warn('unrecognised metric for type of neighbor calculation, switching to angular')
 		metric = 'angular'
-	elif not (metric=='euclidean' or isinstance(metric,DistanceMetric) or metric in KDTree.valid_metrics):
+	elif not approx and not (metric=='euclidean' or isinstance(metric,DistanceMetric) or metric in KDTree.valid_metrics):
 		logg.warn('unrecognised metric for type of neighbor calculation, switching to euclidean')
 		metric = 'euclidean'
 	#obtain the batch balanced KNN graph
