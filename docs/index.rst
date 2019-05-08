@@ -9,4 +9,4 @@ BBKNN
 =====
 
 .. automodule:: bbknn
-   :members:  bbknn, bbknn_pca_matrix
+   :members:  bbknn, bbknn_pca_matrix, extract_cell_connectivity

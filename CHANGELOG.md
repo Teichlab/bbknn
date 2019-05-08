@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2
+- run trimming by default at 10 times the neighbour count for each cell
+- remove scanpy dependency from `bbknn_pca_matrix`; rework setup dependencies as a result
+- removal of `save_knn` option
+
 ## 1.3.1
 - metric sanity check typo fix
 
@@ -12,7 +17,7 @@
 
 ## 1.2.0
 - `bbknn_pca_matrix` function
-- code recactoring
+- code refactoring
 
 ## 1.1.0
 - annoy support

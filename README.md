@@ -10,7 +10,7 @@ As such, BBKNN actively combats this effect by splitting your data into batches 
 
 ## Installation
 
-BBKNN depends on Cython, numpy, annoy and scanpy. The package is available on pip, and can be easily installed as follows:
+BBKNN depends on Cython, numpy, scipy, annoy, umap-learn and sklearn. The package is available on pip, and can be easily installed as follows:
 
 	pip3 install bbknn
 
@@ -34,7 +34,7 @@ An HTML render of the BBKNN function docstring, detailing all the parameters, ca
 
 ## BBKNN in R
 
-At this point, there is no plan to create a BBKNN R package. However, it can be ran quite easily via reticulate. Using the base functions is the same as in python. If you're in possession of a PCA matrix and a batch assignment vector and want to get UMAP coordinates out of it, you can use the following code snippet to do so. The weird PCA computation part and replacing it with your original values is unfortunately necessary due to how AnnData innards operate from a reticulate level.
+At this point, there is no plan to create a BBKNN R package. However, it can be ran quite easily via reticulate. Using the base functions is the same as in python. If you're in possession of a PCA matrix and a batch assignment vector and want to get UMAP coordinates out of it, you can use the following code snippet to do so. The weird PCA computation part and replacing it with your original values is unfortunately necessary due to how AnnData innards operate from a reticulate level. Provide your python path in `use_python()`
 
 	library(reticulate)
 	use_python("/usr/bin/python3")
@@ -54,11 +54,13 @@ When testing locally, faiss refused to work when BBKNN was reticulated. As such,
 
 ## Example Notebooks
 
+**[pancreas.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas.ipynb) is the main demonstration, featuring in-depth annotation and a step by step description/comparison of BBKNN's available options.** 
+
 The repository also features Jupyter Notebooks capturing a range of biological and simulated examples of BBKNN use, along with comparisons to established batch correction methods. These analyses are explained in more detail in the [BBKNN preprint](https://www.biorxiv.org/content/early/2018/08/22/397042). All of the corresponding objects can be downloaded from [ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/](ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/)
 
-- **[pancreas.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas.ipynb) is the main demonstration, featuring in-depth annotation and a step by step description/comparison of BBKNN's available options.** [pancreas-2-mnnCorrect.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-2-mnnCorrect.ipynb) is a companion notebook that sees the same data processed with both the R original and third party Python reimplementation of mnnCorrect, while [pancreas-3-CCA.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-3-CCA.ipynb) processes the data with Seurat's MultiCCA and [pancreas-4-Scanorama.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-4-Scanorama.ipynb) does the same with Scanorama. [pancreas-5-Harmony-kBET.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-5-Harmony-kBET.ipynb) runs Harmony and then uses kBET to quantify the degree of batch correction performed by each of the methods.
+- There are a few more pancreas notebooks not directly related to BBKNN. [pancreas-2-mnnCorrect.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-2-mnnCorrect.ipynb) is a companion notebook that sees the same data processed with both the R original and third party Python reimplementation of mnnCorrect, while [pancreas-3-CCA.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-3-CCA.ipynb) processes the data with Seurat's MultiCCA and [pancreas-4-Scanorama.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-4-Scanorama.ipynb) does the same with Scanorama. [pancreas-5-Harmony-kBET.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-5-Harmony-kBET.ipynb) runs Harmony and then uses kBET to quantify the degree of batch correction performed by each of the methods.
 - [pbmc.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pbmc.ipynb) and [mouse.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse.ipynb) capture the core of the 10X protocol variant PBMC merging and integrative analysis of murine cell atlases respectively. They are annotated in less depth than the pancreas notebooks. [mouse-harmony.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse-harmony.ipynb) runs Harmony on the mouse data.
-- [simulation.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/simulation.ipynb) applies BBKNN to simulated data with a known ground truth, and demonstrates the utility of graph trimming by introducing an unrelated cell population. This simulated data is then used to benchmark BBKNN against mnnCorrect, CCA, Scanorama and Harmony in [benchmark.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark.ipynb), and then finish off with a benchmarking of a BBKNN variant reluctant to work within R/reticulate and visualise the findings in  [benchmark2.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark2.ipynb).
+- [simulation.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/simulation.ipynb) applies BBKNN to simulated data with a known ground truth, and demonstrates the utility of graph trimming by introducing an unrelated cell population. This simulated data is then used to benchmark BBKNN against mnnCorrect, CCA, Scanorama and Harmony in [benchmark.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark.ipynb), and then finish off with a benchmarking of a BBKNN variant reluctant to work within R/reticulate and visualise the findings in  [benchmark2.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark2.ipynb). [benchmark3-new-R-methods.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark3-new-R-methods.ipynb) adds some newer R approaches to the benchmark.
 
 ## Murine Atlas Integration Exploration
 
