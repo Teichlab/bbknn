@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.3
+- add MANIFEST.in for conda purposes
+
 ## 1.3.2
 - run trimming by default at 10 times the neighbour count for each cell
 - remove scanpy dependency from `bbknn_pca_matrix`; rework setup dependencies as a result

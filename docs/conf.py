@@ -20,13 +20,13 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'BBKNN'
-copyright = '2018, Krzysztof Polanski, Jongeun Park'
+copyright = '2018-2019, Krzysztof Polanski, Jongeun Park'
 author = 'Krzysztof Polanski, Jongeun Park'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '1.3.2'
+release = '1.3.3'
 
 
 # -- General configuration ---------------------------------------------------
