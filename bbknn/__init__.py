@@ -264,8 +264,8 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 	#is our batch key actually present in the object?
 	if batch_key not in adata.obs:
 		raise ValueError("Batch key '"+batch_key+"' not present in `adata.obs`.")
-	#do we have a computed PCA? (the .dtype.fields is because of how adata.obsm is formatted)
-	if 'X_pca' not in adata.obsm.dtype.fields:
+	#do we have a computed PCA?
+	if 'X_pca' not in adata.obsm.keys():
 		raise ValueError("`adata.obsm['X_pca']` doesn't exist. Run `sc.pp.pca` first.")
 	#metric sanity checks
 	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
