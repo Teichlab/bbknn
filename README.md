@@ -14,6 +14,10 @@ BBKNN depends on Cython, numpy, scipy, annoy, umap-learn and sklearn. The packag
 
 	pip3 install bbknn
 
+or
+
+	conda install -c bioconda bbknn
+
 BBKNN can also make use of faiss. Consult the [official installation instructions](https://github.com/facebookresearch/faiss/blob/master/INSTALL.md), the easiest way to get it is via conda.
 
 ## Usage and Documentation

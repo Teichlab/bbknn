@@ -1,7 +1,10 @@
 # Changelog
 
+## 1.3.4
+- rework `.obsm['X_pca']` check to be compatible with new structure (I. Virshup)
+
 ## 1.3.3
-- add MANIFEST.in for conda purposes
+- add MANIFEST.in for conda purposes (J. Preußner)
 
 ## 1.3.2
 - run trimming by default at 10 times the neighbour count for each cell
