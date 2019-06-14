@@ -280,7 +280,7 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 	#call BBKNN proper
 	bbknn_out = bbknn_pca_matrix(pca=pca, batch_list=batch_list,
 								 approx=approx, metric=metric, **kwargs)
-	logg.info('	finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+	logg.info('	finished', time=True, deep=' ' if settings.verbosity > 2 else '\n')
 	adata.uns['neighbors'] = {}
 	#we'll have a zero distance for our cell of origin, and nonzero for every other neighbour computed
 	adata.uns['neighbors']['params'] = {'n_neighbors': len(bbknn_out[0][0,:].data)+1, 'method': 'umap'}
