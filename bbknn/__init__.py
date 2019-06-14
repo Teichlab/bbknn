@@ -258,7 +258,7 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 	copy : ``bool``, optional (default: ``False``)
 		If ``True``, return a copy instead of writing to the supplied adata.
 	'''
-	logg.info('computing batch balanced neighbors', r=True)
+	logg.info('computing batch balanced neighbors')
 	adata = adata.copy() if copy else adata
 	#basic sanity checks to begin
 	#is our batch key actually present in the object?
