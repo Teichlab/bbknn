@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.5
+- update logging to match scanpy 1.4.4 standards
+
 ## 1.3.4
 - rework `.obsm['X_pca']` check to be compatible with new structure (I. Virshup)
 

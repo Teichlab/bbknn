@@ -7,7 +7,6 @@ from scipy.spatial import cKDTree
 from scipy.sparse import coo_matrix
 from umap.umap_ import fuzzy_simplicial_set
 try:
-	from scanpy import settings
 	from scanpy import logging as logg
 except ImportError:
 	pass
@@ -258,7 +257,7 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 	copy : ``bool``, optional (default: ``False``)
 		If ``True``, return a copy instead of writing to the supplied adata.
 	'''
-	logg.info('computing batch balanced neighbors', r=True)
+	start = logg.info('computing batch balanced neighbors')
 	adata = adata.copy() if copy else adata
 	#basic sanity checks to begin
 	#is our batch key actually present in the object?
@@ -280,16 +279,15 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 	#call BBKNN proper
 	bbknn_out = bbknn_pca_matrix(pca=pca, batch_list=batch_list,
 								 approx=approx, metric=metric, **kwargs)
-	logg.info('	finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+	logg.info('	finished', time=start,
+		deep=('added to `.uns[\'neighbors\']`\n'
+		'	\'distances\', weighted adjacency matrix\n'
+		'	\'connectivities\', weighted adjacency matrix'))
 	adata.uns['neighbors'] = {}
 	#we'll have a zero distance for our cell of origin, and nonzero for every other neighbour computed
 	adata.uns['neighbors']['params'] = {'n_neighbors': len(bbknn_out[0][0,:].data)+1, 'method': 'umap'}
 	adata.uns['neighbors']['distances'] = bbknn_out[0]
 	adata.uns['neighbors']['connectivities'] = bbknn_out[1]
-	logg.hint(
-		'added to `.uns[\'neighbors\']`\n'
-		'	\'distances\', weighted adjacency matrix\n'
-		'	\'connectivities\', weighted adjacency matrix')
 	return adata if copy else None
 
 def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None, 
