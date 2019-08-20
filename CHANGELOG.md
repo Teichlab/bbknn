@@ -13,6 +13,7 @@
 - run trimming by default at 10 times the neighbour count for each cell
 - remove scanpy dependency from `bbknn_pca_matrix`; rework setup dependencies as a result
 - removal of `save_knn` option
+- creation of diagnostic `extract_cell_connectivity` function for plotting connectivities
 
 ## 1.3.1
 - metric sanity check typo fix

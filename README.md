@@ -8,6 +8,18 @@ As such, BBKNN actively combats this effect by splitting your data into batches 
 
 <p align="center"><img src="figures/batch2.png" alt="BBKNN" width="50%"></p>
 
+## Citation
+
+If you use BBKNN in your work, please cite the [paper](https://doi.org/10.1093/bioinformatics/btz625):
+
+	@article{polanski2019bbknn,
+	  title={BBKNN: Fast Batch Alignment of Single Cell Transcriptomes},
+	  author={Pola{\'n}ski, Krzysztof and Park, Jong-Eun and Young, Matthew D and Miao, Zhichao and Meyer, Kerstin B and Teichmann, Sarah A},
+	  doi={10.1093/bioinformatics/btz625},
+	  journal={Bioinformatics},
+	  year={2019}
+	}
+
 ## Installation
 
 BBKNN depends on Cython, numpy, scipy, annoy, umap-learn and sklearn. The package is available on pip and conda, and can be easily installed as follows:
@@ -60,12 +72,12 @@ When testing locally, faiss refused to work when BBKNN was reticulated. As such,
 
 **[pancreas.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas.ipynb) is the main demonstration, featuring in-depth annotation and a step by step description/comparison of BBKNN's available options.** 
 
-The repository also features Jupyter Notebooks capturing a range of biological and simulated examples of BBKNN use, along with comparisons to established batch correction methods. These analyses are explained in more detail in the [BBKNN preprint](https://www.biorxiv.org/content/early/2018/08/22/397042). All of the corresponding objects can be downloaded from [ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/](ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/)
-
-- There are a few more pancreas notebooks not directly related to BBKNN. [pancreas-2-mnnCorrect.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-2-mnnCorrect.ipynb) is a companion notebook that sees the same data processed with both the R original and third party Python reimplementation of mnnCorrect, while [pancreas-3-CCA.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-3-CCA.ipynb) processes the data with Seurat's MultiCCA and [pancreas-4-Scanorama.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-4-Scanorama.ipynb) does the same with Scanorama. [pancreas-5-Harmony-kBET.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-5-Harmony-kBET.ipynb) runs Harmony and then uses kBET to quantify the degree of batch correction performed by each of the methods.
-- [pbmc.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pbmc.ipynb) and [mouse.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse.ipynb) capture the core of the 10X protocol variant PBMC merging and integrative analysis of murine cell atlases respectively. They are annotated in less depth than the pancreas notebooks. [mouse-harmony.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse-harmony.ipynb) runs Harmony on the mouse data.
+The [BBKNN paper](https://doi.org/10.1093/bioinformatics/btz625) makes use of the following analyses:
 - [simulation.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/simulation.ipynb) applies BBKNN to simulated data with a known ground truth, and demonstrates the utility of graph trimming by introducing an unrelated cell population. This simulated data is then used to benchmark BBKNN against mnnCorrect, CCA, Scanorama and Harmony in [benchmark.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark.ipynb), and then finish off with a benchmarking of a BBKNN variant reluctant to work within R/reticulate and visualise the findings in  [benchmark2.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark2.ipynb). [benchmark3-new-R-methods.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark3-new-R-methods.ipynb) adds some newer R approaches to the benchmark.
+- [mouse.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse.ipynb) runs a collection of murine atlases through BBKNN. [mouse-harmony.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse-harmony.ipynb) applies Harmony to the same data.
 
-## Murine Atlas Integration Exploration
+The original [BBKNN preprint](https://www.biorxiv.org/content/early/2018/08/22/397042) performed a few more analyses that got ultimately removed. All of the corresponding objects can be downloaded from [ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/](ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/)
 
-The murine objects, created during an integrative analysis detailed in [the preprint](https://www.biorxiv.org/content/early/2018/08/22/397042), can be downloaded from [ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/MouseAtlas.zip](ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/MouseAtlas.zip) and easily explored. A dedicated exploration notebook with examples and explanations is provided at [mouse-exploratory-visualisation.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse-exploratory-visualisation.ipynb). This includes the extraction of modules of correlated transcription factors and an interactive visualisation where hovering reveals the gene name.
+- [pancreas-2-mnnCorrect.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-2-mnnCorrect.ipynb), [pancreas-3-CCA.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-3-CCA.ipynb), [pancreas-4-Scanorama.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-4-Scanorama.ipynb), [pancreas-5-Harmony-kBET.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-5-Harmony-kBET.ipynb) process the pancreas data with the top batch correction packages 2018 had to offer. Some of these run instructions are antiquated by now.
+- [pbmc.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pbmc.ipynb) runs BBKNN on 10X protocol variant PBMCs.
+- [mouse-exploratory-visualisation.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse-exploratory-visualisation.ipynb) is a browser notebook for the murine atlas/transcription factor network objects that can be downloaded from [ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/MouseAtlas.zip](ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/MouseAtlas.zip)
