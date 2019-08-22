@@ -268,10 +268,10 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 		raise ValueError("`adata.obsm['X_pca']` doesn't exist. Run `sc.pp.pca` first.")
 	#metric sanity checks
 	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
-		logg.warn('unrecognised metric for type of neighbor calculation, switching to angular')
+		logg.warning('unrecognised metric for type of neighbor calculation, switching to angular')
 		metric = 'angular'
 	elif not approx and not (metric=='euclidean' or isinstance(metric,DistanceMetric) or metric in KDTree.valid_metrics):
-		logg.warn('unrecognised metric for type of neighbor calculation, switching to euclidean')
+		logg.warning('unrecognised metric for type of neighbor calculation, switching to euclidean')
 		metric = 'euclidean'
 	#prepare bbknn_pca_matrix input
 	pca = adata.obsm['X_pca']
