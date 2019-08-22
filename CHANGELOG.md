@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.6
+- further updated scanpy logging compatibility tweak (F. Rost)
+
 ## 1.3.5
 - update logging to match scanpy 1.4.4 standards
 
