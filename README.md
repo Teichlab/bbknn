@@ -14,7 +14,7 @@ If you use BBKNN in your work, please cite the [paper](https://doi.org/10.1093/b
 
 	@article{polanski2019bbknn,
 	  title={BBKNN: Fast Batch Alignment of Single Cell Transcriptomes},
-	  author={Pola{\'n}ski, Krzysztof and Park, Jong-Eun and Young, Matthew D and Miao, Zhichao and Meyer, Kerstin B and Teichmann, Sarah A},
+	  author={Pola{\'n}ski, Krzysztof and Young, Matthew D and Miao, Zhichao and Meyer, Kerstin B and Teichmann, Sarah A and Park, Jong-Eun},
 	  doi={10.1093/bioinformatics/btz625},
 	  journal={Bioinformatics},
 	  year={2019}
