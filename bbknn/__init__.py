@@ -200,7 +200,7 @@ def trimming(cnts,trim):
 		cnts = cnts.T.tocsr()
 	return cnts
 
-def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, **kwargs):
+def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, use_rep='X_pca', **kwargs):
 	'''
 	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
 	each batch separately instead of the entire cell pool with no accounting for batch.
@@ -246,6 +246,9 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 		>>> neighbors.KDTree.valid_metrics
 		['p', 'chebyshev', 'cityblock', 'minkowski', 'infinity', 'l2', 'euclidean', 'manhattan', 'l1']
 		>>> pass_this_as_metric = neighbors.DistanceMetric.get_metric('minkowski',p=3)
+	use_rep : ``str``, optional (default: `X_pca`)
+		Default embedding is PCA, but differerent could be used. If the embedding does 
+		not exists, X_pca is used.
 	set_op_mix_ratio : ``float``, optional (default: 1)
 		UMAP connectivity computation parameter, float between 0 and 1, controlling the 
 		blend between a connectivity matrix formed exclusively from mutual nearest neighbour
@@ -274,7 +277,10 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 		logg.warning('unrecognised metric for type of neighbor calculation, switching to euclidean')
 		metric = 'euclidean'
 	#prepare bbknn_pca_matrix input
-	pca = adata.obsm['X_pca']
+	if use_rep not in adata.obsm.keys():
+		pca = adata.obsm['X_pca']
+	else:
+		pca = adata.obsm[use_rep]
 	batch_list = adata.obs[batch_key].values
 	#call BBKNN proper
 	bbknn_out = bbknn_pca_matrix(pca=pca, batch_list=batch_list,
