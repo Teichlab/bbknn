@@ -200,7 +200,7 @@ def trimming(cnts,trim):
 		cnts = cnts.T.tocsr()
 	return cnts
 
-def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, **kwargs):
+def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angular', copy=False, **kwargs):
 	'''
 	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
 	each batch separately instead of the entire cell pool with no accounting for batch.
@@ -216,8 +216,10 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 	neighbors_within_batch : ``int``, optional (default: 3)
 		How many top neighbours to report for each batch; total number of neighbours 
 		will be this number times the number of batches.
+	use_rep : ``str``, optional (default: "X_pca")
+		The dimensionality reduction in `.obsm` to use for neighbour detection. Defaults to PCA.
 	n_pcs : ``int``, optional (default: 50)
-		How many principal components to use in the analysis.
+		How many dimensions (in case of PCA, principal components) to use in the analysis.
 	trim : ``int`` or ``None``, optional (default: ``None``)
 		Trim the neighbours of each cell to these many top connectivities. May help with 
 		population independence and improve the tidiness of clustering. The lower the value the
@@ -264,8 +266,8 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 	if batch_key not in adata.obs:
 		raise ValueError("Batch key '"+batch_key+"' not present in `adata.obs`.")
 	#do we have a computed PCA?
-	if 'X_pca' not in adata.obsm.keys():
-		raise ValueError("`adata.obsm['X_pca']` doesn't exist. Run `sc.pp.pca` first.")
+	if use_rep not in adata.obsm.keys():
+		raise ValueError("Did not find "+use_rep+" in `.obsm.keys()`. You need to compute it first.")
 	#metric sanity checks
 	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
 		logg.warning('unrecognised metric for type of neighbor calculation, switching to angular')
@@ -274,7 +276,7 @@ def bbknn(adata, batch_key='batch', approx=True, metric='angular', copy=False, *
 		logg.warning('unrecognised metric for type of neighbor calculation, switching to euclidean')
 		metric = 'euclidean'
 	#prepare bbknn_pca_matrix input
-	pca = adata.obsm['X_pca']
+	pca = adata.obsm[use_rep]
 	batch_list = adata.obs[batch_key].values
 	#call BBKNN proper
 	bbknn_out = bbknn_pca_matrix(pca=pca, batch_list=batch_list,
@@ -302,7 +304,7 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 	Input
 	-----
 	pca : ``numpy.array``
-		PCA coordinates for each cell, with cells as rows.
+		PCA (or other dimensionality reduction) coordinates for each cell, with cells as rows.
 	batch_list : ``numpy.array`` or ``list``
 		A list of batch assignments for each cell.
 	'''

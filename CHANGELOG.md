@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.7
+- support for non-PCA dimensionality reductions on input (brought to attention by D. Cittaro)
+
 ## 1.3.6
 - further updated scanpy logging compatibility tweak (F. Rost)
 
