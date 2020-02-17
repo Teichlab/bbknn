@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.8
+- support umap-learn 0.4 connectivity output in a backward compatible manner (I. Driver)
+
 ## 1.3.7
 - support for non-PCA dimensionality reductions on input (brought to attention by D. Cittaro)
 
