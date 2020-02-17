@@ -46,7 +46,7 @@ def compute_connectivities_umap(knn_indices, knn_dists,
 		local_connectivity=1.0):
 	'''
 	Copied out of scanpy.neighbors
-	
+
 	This is from umap.fuzzy_simplicial_set [McInnes18]_.
 	Given a set of data X, a neighborhood size, and a measure of distance
 	compute the fuzzy simplicial set (here represented as a fuzzy graph in
@@ -60,6 +60,9 @@ def compute_connectivities_umap(knn_indices, knn_dists,
 										  knn_indices=knn_indices, knn_dists=knn_dists,
 										  set_op_mix_ratio=set_op_mix_ratio,
 										  local_connectivity=local_connectivity)
+	if isinstance(connectivities, tuple):
+		# In umap-learn 0.4, this returns (result, sigmas, rhos)
+		connectivities = connectivities[0]
 	distances = get_sparse_matrix_from_indices_distances_umap(knn_indices, knn_dists, n_obs, n_neighbors)
 
 	return distances, connectivities.tocsr()
@@ -68,7 +71,7 @@ def create_tree(data,approx,metric,use_faiss,n_trees):
 	'''
 	Create a faiss/cKDTree/KDTree/annoy index for nearest neighbour lookup. All undescribed input
 	as in ``bbknn.bbknn()``. Returns the resulting index.
-	
+
 	Input
 	-----
 	data : ``numppy.array``
@@ -94,7 +97,7 @@ def query_tree(data,ckd,neighbors_within_batch,approx,metric,use_faiss):
 	Query the faiss/cKDTree/KDTree/annoy index with PCA coordinates from a batch. All undescribed input
 	as in ``bbknn.bbknn()``. Returns a tuple of distances and indices of neighbours for each cell
 	in the batch.
-	
+
 	Input
 	-----
 	data : ``numpy.array``
@@ -171,9 +174,9 @@ def get_graph(pca,batch_list,neighbors_within_batch,n_pcs,approx,metric,use_fais
 
 def trimming(cnts,trim):
 	'''
-	Trims the graph to the top connectivities for each cell. All undescribed input as in 
+	Trims the graph to the top connectivities for each cell. All undescribed input as in
 	``bbknn.bbknn()``.
-	
+
 	Input
 	-----
 	cnts : ``CSR``
@@ -206,7 +209,7 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	each batch separately instead of the entire cell pool with no accounting for batch.
 	Aligns batches in a quick and lightweight manner.
 	For use in the scanpy workflow as an alternative to ``scanpi.api.pp.neighbors()``.
-	
+
 	Input
 	-----
 	adata : ``AnnData``
@@ -214,42 +217,42 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	batch_key : ``str``, optional (default: "batch")
 		``adata.obs`` column name discriminating between your batches.
 	neighbors_within_batch : ``int``, optional (default: 3)
-		How many top neighbours to report for each batch; total number of neighbours 
+		How many top neighbours to report for each batch; total number of neighbours
 		will be this number times the number of batches.
 	use_rep : ``str``, optional (default: "X_pca")
 		The dimensionality reduction in `.obsm` to use for neighbour detection. Defaults to PCA.
 	n_pcs : ``int``, optional (default: 50)
 		How many dimensions (in case of PCA, principal components) to use in the analysis.
 	trim : ``int`` or ``None``, optional (default: ``None``)
-		Trim the neighbours of each cell to these many top connectivities. May help with 
+		Trim the neighbours of each cell to these many top connectivities. May help with
 		population independence and improve the tidiness of clustering. The lower the value the
 		more independent the individual populations, at the cost of more conserved batch effect.
 		If ``None``, sets the parameter value automatically to 10 times the total number of
 		neighbours for each cell. Set to 0 to skip.
 	approx : ``bool``, optional (default: ``True``)
-		If ``True``, use annoy's approximate neighbour finding. This results in a quicker run time 
+		If ``True``, use annoy's approximate neighbour finding. This results in a quicker run time
 		for large datasets while also potentially increasing the degree of batch correction.
 	n_trees : ``int``, optional (default: 10)
 		Only used when ``approx=True``. The number of trees to construct in the annoy forest.
-		More trees give higher precision when querying, at the cost of increased run time and 
+		More trees give higher precision when querying, at the cost of increased run time and
 		resource intensity.
 	use_faiss : ``bool``, optional (default: ``True``)
 		If ``approx=False`` and the metric is "euclidean", use the faiss package to compute
-		nearest neighbours if installed. This improves performance at a minor cost to numerical 
+		nearest neighbours if installed. This improves performance at a minor cost to numerical
 		precision as faiss operates on float32.
 	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default: "angular")
 		What distance metric to use. If using ``approx=True``, the options are "angular",
-		"euclidean", "manhattan" and "hamming". Otherwise, the options are "euclidean", 
-		a member of the ``sklearn.neighbors.KDTree.valid_metrics`` list, or parameterised 
-		``sklearn.neighbors.DistanceMetric`` `objects 
+		"euclidean", "manhattan" and "hamming". Otherwise, the options are "euclidean",
+		a member of the ``sklearn.neighbors.KDTree.valid_metrics`` list, or parameterised
+		``sklearn.neighbors.DistanceMetric`` `objects
 		<https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.DistanceMetric.html>`_:
-		
+
 		>>> from sklearn import neighbors
 		>>> neighbors.KDTree.valid_metrics
 		['p', 'chebyshev', 'cityblock', 'minkowski', 'infinity', 'l2', 'euclidean', 'manhattan', 'l1']
 		>>> pass_this_as_metric = neighbors.DistanceMetric.get_metric('minkowski',p=3)
 	set_op_mix_ratio : ``float``, optional (default: 1)
-		UMAP connectivity computation parameter, float between 0 and 1, controlling the 
+		UMAP connectivity computation parameter, float between 0 and 1, controlling the
 		blend between a connectivity matrix formed exclusively from mutual nearest neighbour
 		pairs (0) and a union of all observed neighbour relationships with the mutual pairs
 		emphasised (1)
@@ -292,15 +295,15 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	adata.uns['neighbors']['connectivities'] = bbknn_out[1]
 	return adata if copy else None
 
-def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None, 
-		  approx=True, n_trees=10, use_faiss=True, metric='angular', 
+def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
+		  approx=True, n_trees=10, use_faiss=True, metric='angular',
 		  set_op_mix_ratio=1, local_connectivity=1):
 	'''
 	Scanpy-independent BBKNN variant that runs on a PCA matrix and list of per-cell batch assignments instead of
 	an AnnData object. Non-data-entry arguments behave the same way as ``bbknn.bbknn()``.
 	Returns a ``(distances, connectivities)`` tuple, like what would have been stored in the AnnData object.
 	The connectivities are the actual neighbourhood graph.
-	
+
 	Input
 	-----
 	pca : ``numpy.array``
@@ -328,9 +331,9 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 	#sort the neighbours so that they're actually in order from closest to furthest
 	newidx = np.argsort(knn_distances,axis=1)
 	knn_indices = knn_indices[np.arange(np.shape(knn_indices)[0])[:,np.newaxis],newidx]
-	knn_distances = knn_distances[np.arange(np.shape(knn_distances)[0])[:,np.newaxis],newidx] 
+	knn_distances = knn_distances[np.arange(np.shape(knn_distances)[0])[:,np.newaxis],newidx]
 	#this part of the processing is akin to scanpy.api.neighbors()
-	dist, cnts = compute_connectivities_umap(knn_indices, knn_distances, knn_indices.shape[0], 
+	dist, cnts = compute_connectivities_umap(knn_indices, knn_distances, knn_indices.shape[0],
 											 knn_indices.shape[1], set_op_mix_ratio=set_op_mix_ratio,
 											 local_connectivity=local_connectivity)
 	#trimming. compute default range if absent
@@ -347,7 +350,7 @@ def extract_cell_connectivity(adata, cell, key='extracted_cell_connectivity'):
 	it in ``adata.obs``, ready for plotting. Connectivities range from 0 to 1, the higher
 	the connectivity the closer the cells are in the neighbour graph. Cells with a
 	connectivity of 0 are unconnected in the graph.
-	
+
 	Input
 	-----
 	adata : ``AnnData``
