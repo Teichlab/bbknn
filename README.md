@@ -22,7 +22,7 @@ If you use BBKNN in your work, please cite the [paper](https://doi.org/10.1093/b
 
 ## Installation
 
-BBKNN depends on Cython, numpy, scipy, annoy, umap-learn and sklearn. The package is available on pip and conda, and can be easily installed as follows:
+BBKNN depends on Cython, numpy, scipy, annoy, umap-learn and scikit-learn. The package is available on pip and conda, and can be easily installed as follows:
 
 	pip3 install bbknn
 

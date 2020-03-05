@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.9
+- sklearn is actually scikit-learn for dependency purposes (D. DeTomaso)
+
 ## 1.3.8
 - support umap-learn 0.4 connectivity output in a backward compatible manner (I. Driver)
 
