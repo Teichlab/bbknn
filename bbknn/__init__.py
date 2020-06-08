@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 from annoy import AnnoyIndex
+from packaging import version
 from sklearn.neighbors import KDTree
 from sklearn.neighbors import DistanceMetric
 from scipy.spatial import cKDTree
@@ -8,6 +9,10 @@ from scipy.sparse import coo_matrix
 from umap.umap_ import fuzzy_simplicial_set
 try:
 	from scanpy import logging as logg
+except ImportError:
+	pass
+try:
+	import anndata
 except ImportError:
 	pass
 try:
@@ -284,15 +289,28 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	#call BBKNN proper
 	bbknn_out = bbknn_pca_matrix(pca=pca, batch_list=batch_list,
 								 approx=approx, metric=metric, **kwargs)
-	logg.info('	finished', time=start,
-		deep=('added to `.uns[\'neighbors\']`\n'
-		'	\'distances\', weighted adjacency matrix\n'
-		'	\'connectivities\', weighted adjacency matrix'))
+	#store the parameters in .uns['neighbors']['params'], add use_rep and batch_key
 	adata.uns['neighbors'] = {}
-	#we'll have a zero distance for our cell of origin, and nonzero for every other neighbour computed
-	adata.uns['neighbors']['params'] = {'n_neighbors': len(bbknn_out[0][0,:].data)+1, 'method': 'umap'}
-	adata.uns['neighbors']['distances'] = bbknn_out[0]
-	adata.uns['neighbors']['connectivities'] = bbknn_out[1]
+	adata.uns['neighbors']['params'] = bbknn_out[2]
+	adata.uns['neighbors']['params']['use_rep'] = use_rep
+	adata.uns['neighbors']['params']['bbknn']['batch_key'] = batch_key
+	#store the graphs in .uns['neighbors'] or .obsp, conditional on anndata version
+	if version.parse(anndata.__version__) < version.parse('0.7.0'):
+		adata.uns['neighbors']['distances'] = bbknn_out[0]
+		adata.uns['neighbors']['connectivities'] = bbknn_out[1]
+		logg.info('	finished', time=start,
+			deep=('added to `.uns[\'neighbors\']`\n'
+			'	\'distances\', distances for each pair of neighbors\n'
+			'	\'connectivities\', weighted adjacency matrix'))
+	else:
+		adata.obsp['distances'] = bbknn_out[0]
+		adata.obsp['connectivities'] = bbknn_out[1]
+		adata.uns['neighbors']['distances_key'] = 'distances'
+		adata.uns['neighbors']['connectivities_key'] = 'connectivities'
+		logg.info('	finished', time=start,
+			deep=('added to `.uns[\'neighbors\']`\n'
+			'	`.obsp[\'distances\']`, distances for each pair of neighbors\n'
+			'	`.obsp[\'connectivities\']`, weighted adjacency matrix'))
 	return adata if copy else None
 
 def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
@@ -301,7 +319,7 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 	'''
 	Scanpy-independent BBKNN variant that runs on a PCA matrix and list of per-cell batch assignments instead of
 	an AnnData object. Non-data-entry arguments behave the same way as ``bbknn.bbknn()``.
-	Returns a ``(distances, connectivities)`` tuple, like what would have been stored in the AnnData object.
+	Returns a ``(distances, connectivities, parameters)`` tuple, like what would have been stored in the AnnData object.
 	The connectivities are the actual neighbourhood graph.
 
 	Input
@@ -342,7 +360,22 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 	#skip trimming if set to 0, otherwise trim
 	if trim > 0:
 		cnts = trimming(cnts=cnts,trim=trim)
-	return (dist, cnts)
+	#create a collated parameters dictionary
+	#determine which neighbour computation was used, mirroring create_tree() logic
+	if approx:
+		computation='annoy'
+	elif metric == 'euclidean':
+		if 'faiss' in sys.modules and use_faiss:
+			computation='faiss'
+		else:
+			computation='cKDTree'
+	else:
+		computation='KDTree'
+	#we'll have a zero distance for our cell of origin, and nonzero for every other neighbour computed
+	params = {'n_neighbors': len(dist[0,:].data)+1, 'method': 'umap', 
+			  'metric': metric, 'n_pcs': n_pcs, 
+			  'bbknn': {'trim': trim, 'computation': computation}}
+	return (dist, cnts, params)
 
 def extract_cell_connectivity(adata, cell, key='extracted_cell_connectivity'):
 	'''

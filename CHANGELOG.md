@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.10
+- store the computed graphs in `.obsp` if anndata is 0.7 or newer
+- include additional parameter information in `.uns['neighbors']`
+- return `.uns['neighbor']`-style parameter dictionary as third tuple element from `bbknn_pca_matrix`
+
 ## 1.3.9
 - sklearn is actually scikit-learn for dependency purposes (D. DeTomaso)
 
