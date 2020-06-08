@@ -295,7 +295,7 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	adata.uns['neighbors']['params']['use_rep'] = use_rep
 	adata.uns['neighbors']['params']['bbknn']['batch_key'] = batch_key
 	#store the graphs in .uns['neighbors'] or .obsp, conditional on anndata version
-	if version.parse(anndata.__version__) < version.parse('0.7.0'):
+	if version.parse(str(anndata.__version__)) < version.parse('0.7.0'):
 		adata.uns['neighbors']['distances'] = bbknn_out[0]
 		adata.uns['neighbors']['connectivities'] = bbknn_out[1]
 		logg.info('	finished', time=start,

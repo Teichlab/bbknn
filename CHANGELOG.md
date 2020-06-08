@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.11
+- fix version parsing for newer versions of `anndata` and `packaging`
+
 ## 1.3.10
 - store the computed graphs in `.obsp` if anndata is 0.7 or newer
 - include additional parameter information in `.uns['neighbors']`
