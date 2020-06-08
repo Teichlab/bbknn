@@ -44,7 +44,7 @@ You can provide which `adata.obs` column to use for batch discrimination via the
 Alternately, you can just provide a PCA matrix with cells as rows and a matching vector of batch assignments for each of the cells and call BBKNN as follows (with `connectivities` being the primary graph output of interest):
 
 	import bbknn
-	distances, connectivities = bbknn.bbknn_pca_matrix(pca_matrix, batch_list)
+	distances, connectivities, parameters = bbknn.bbknn_pca_matrix(pca_matrix, batch_list)
 
 An HTML render of the BBKNN function docstring, detailing all the parameters, can be accessed at [ReadTheDocs](https://bbknn.readthedocs.io/en/latest/).
 
