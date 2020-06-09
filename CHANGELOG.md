@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.12
+- add packaging as a dependency in `setup.py`
+
 ## 1.3.11
 - fix version parsing for newer versions of `anndata` and `packaging`
 
