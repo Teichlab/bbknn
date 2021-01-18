@@ -15,9 +15,7 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
-autodoc_mock_imports = ['numpy','scipy','pandas','annoy','packaging','sklearn','sklearn.linear_model','umap']
-MOCK_MODULES = ['sklearn', 'sklearn.linear_model']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+autodoc_mock_imports = ['numpy','scipy','pandas','annoy','packaging','sklearn','sklearn.linear_model','umap.umap_']
 
 # -- Project information -----------------------------------------------------
 

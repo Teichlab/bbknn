@@ -9,7 +9,6 @@ from sklearn.neighbors import DistanceMetric
 from scipy.spatial import cKDTree
 from scipy.sparse import coo_matrix
 from umap.umap_ import fuzzy_simplicial_set
-from sklearn.linear_model import Ridge
 try:
 	from scanpy import logging as logg
 except ImportError:
@@ -410,6 +409,7 @@ def ridge_regression(adata, batch_key, confounder_key=[], chunksize=1e8, copy=Fa
 	kwargs
 		Any arguments to pass to `Ridge <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html>`_.
 	'''
+	from sklearn.linear_model import Ridge
 	start = logg.info('computing ridge regression')
 	adata = adata.copy() if copy else adata
 	#just in case the arguments are not provided as lists, convert them to such
