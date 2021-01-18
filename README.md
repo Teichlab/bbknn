@@ -41,7 +41,7 @@ BBKNN has the option to immediately slot into the spot occupied by `scanpy.neigh
 
 You can provide which `adata.obs` column to use for batch discrimination via the `batch_key` parameter. This defaults to `'batch'`, which is created by scanpy when you merge multiple AnnData objects (e.g. if you were to import multiple samples separately and then concatenate them).
 
-Integration can be improved by using ridge regression on both a technical effect and a biological grouping prior to BBKNN, following a workflow from [Park _et al._, 2020](https://science.sciencemag.org/content/367/6480/eaay3224.abstract). In the event of not having a biological grouping at hand, a coarse clustering obtained from a BBKNN-corrected graph can be used in its place. This creates the following workflow basic syntax:
+Integration can be improved by using ridge regression on both a technical effect and a biological grouping prior to BBKNN, following a workflow from [Park _et al._, 2020](https://science.sciencemag.org/content/367/6480/eaay3224.abstract). In the event of not having a biological grouping at hand, a coarse clustering obtained from a BBKNN-corrected graph can be used in its place. This creates the following basic workflow syntax:
 
 	import bbknn
 	import scanpy
