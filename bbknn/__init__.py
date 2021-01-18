@@ -7,12 +7,9 @@ from packaging import version
 from scipy.spatial import cKDTree
 from scipy.sparse import coo_matrix
 from umap.umap_ import fuzzy_simplicial_set
-try:
-	from sklearn.neighbors import KDTree
-	from sklearn.neighbors import DistanceMetric
-	from sklearn.linear_model import Ridge
-except ImportError:
-	pass
+from sklearn.neighbors import KDTree
+from sklearn.neighbors import DistanceMetric
+from sklearn.linear_model import Ridge
 try:
 	from scanpy import logging as logg
 except ImportError:
