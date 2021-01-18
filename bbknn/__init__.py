@@ -1,4 +1,6 @@
+import pandas as pd
 import numpy as np
+import scipy
 import sys
 from annoy import AnnoyIndex
 from packaging import version
@@ -7,6 +9,7 @@ from sklearn.neighbors import DistanceMetric
 from scipy.spatial import cKDTree
 from scipy.sparse import coo_matrix
 from umap.umap_ import fuzzy_simplicial_set
+from sklearn.linear_model import Ridge
 try:
 	from scanpy import logging as logg
 except ImportError:
@@ -225,7 +228,7 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 		How many top neighbours to report for each batch; total number of neighbours
 		will be this number times the number of batches.
 	use_rep : ``str``, optional (default: "X_pca")
-		The dimensionality reduction in `.obsm` to use for neighbour detection. Defaults to PCA.
+		The dimensionality reduction in ``.obsm`` to use for neighbour detection. Defaults to PCA.
 	n_pcs : ``int``, optional (default: 50)
 		How many dimensions (in case of PCA, principal components) to use in the analysis.
 	trim : ``int`` or ``None``, optional (default: ``None``)
@@ -335,6 +338,10 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 		raise ValueError("Different cell counts indicated by `pca.shape[0]` and `len(batch_list)`.")
 	#convert batch_list to np.array of strings for ease of mask making later
 	batch_list = np.asarray([str(i) for i in batch_list])
+	#assert that all batches have at least neighbors_within_batch cells in there
+	unique, counts = np.unique(batch_list, return_counts=True)
+	if np.min(counts) < neighbors_within_batch:
+		raise ValueError("Not all batches have at least `neighbors_within_batch` cells in them.")
 	#metric sanity checks (duplicating the ones in bbknn(), but without scanpy logging)
 	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
 		print('unrecognised metric for type of neighbor calculation, switching to angular')
@@ -376,6 +383,83 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 			  'metric': metric, 'n_pcs': n_pcs, 
 			  'bbknn': {'trim': trim, 'computation': computation}}
 	return (dist, cnts, params)
+
+def ridge_regression(adata, batch_key, confounder_key=[], chunksize=1e8, copy=False, **kwargs):
+	'''
+	Perform ridge regression on scaled expression data, accepting both technical and 
+	biological categorical variables. The effect of the technical variables is removed 
+	while the effect of the biological variables is retained. This is a preprocessing 
+	step that can aid BBKNN integration `(Park, 2020) <https://science.sciencemag.org/content/367/6480/eaay3224.abstract>`_.
+	
+	Alters the object's ``.X`` to be the regression residuals, and creates ``.layers['X_explained']`` 
+	with the expression explained by the technical effect.
+	
+	Input
+	-----
+	adata : ``AnnData``
+		Needs scaled data in ``.X``.
+	batch_key : ``list``
+		A list of categorical ``.obs`` columns to regress out as technical effects.
+	confounder_key : ``list``, optional (default: ``[]``)
+		A list of categorical ``.obs`` columns to retain as biological effects.
+	chunksize : ``int``, optional (default: 1e8)
+		How many elements of the expression matrix to process at a time. Potentially useful 
+		to manage memory use for larger datasets.
+	copy : ``bool``, optional (default: ``False``)
+		If ``True``, return a copy instead of writing to the supplied adata.
+	kwargs
+		Any arguments to pass to `Ridge <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html>`_.
+	'''
+	start = logg.info('computing ridge regression')
+	adata = adata.copy() if copy else adata
+	#just in case the arguments are not provided as lists, convert them to such
+	#as they need to be lists for downstream application
+	if not isinstance(batch_key, list):
+		batch_key = [batch_key]
+	if not isinstance(confounder_key, list):
+		confounder_key = [confounder_key]
+	
+	#construct a helper representation of the batch and biological variables
+	#as a data frame with one row per cell, with columns specifying the various batch/biological categories
+	#with values of 1 where the cell is of the category and 0 otherwise (dummy)
+	#and subsequently identify which of the data frame columns are batch rather than biology (batch_index)
+	#and subset the data frame to just those columns, in np.array form (dm)
+	dummy = pd.get_dummies(adata.obs[batch_key+confounder_key],drop_first=False)
+	if len(batch_key)>1:
+		batch_index = np.logical_or.reduce(np.vstack([dummy.columns.str.startswith(x) for x in batch_key]))
+	else:
+		batch_index = np.vstack([dummy.columns.str.startswith(x) for x in batch_key])[0]
+	dm = np.array(dummy)[:,batch_index]
+	
+	#compute how many genes at a time will be processed - aiming for chunksize total elements per
+	chunkcount = np.ceil(chunksize/adata.shape[0])
+	
+	#make a Ridge with all the **kwargs passed if need be, and fit_intercept set to False
+	#(as the data is centered). create holders for results
+	LR = Ridge(fit_intercept=False, **kwargs)
+	X_explained = []
+	X_remain = []
+	#loop over the gene space in chunkcount-sized chunks
+	for ind in np.arange(0,adata.shape[1],chunkcount):
+		#extract the expression and turn to dense if need be
+		X_exp = adata.X[:,np.int(ind):np.int(ind+chunkcount)] # scaled data
+		if scipy.sparse.issparse(X_exp):
+			X_exp = X_exp.todense()
+		#fit the ridge regression model, compute the expression explained by the technical 
+		#effect, and the remaining residual
+		LR.fit(dummy,X_exp)	
+		X_explained.append(dm.dot(LR.coef_[:,batch_index].T))
+		X_remain.append(X_exp - X_explained[-1])
+	
+	#collapse the chunked outputs and store them in the object
+	X_explained = np.hstack(X_explained)
+	X_remain = np.hstack(X_remain)
+	adata.X = X_remain
+	adata.layers['X_explained'] = X_explained
+	logg.info('	finished', time=start,
+		deep=('`.X` now features regression residuals\n'
+		'	`.layers[\'X_explained\']` stores the expression explained by the technical effect'))
+	return adata if copy else None
 
 def extract_cell_connectivity(adata, cell, key='extracted_cell_connectivity'):
 	'''

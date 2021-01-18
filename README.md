@@ -1,6 +1,6 @@
 # Batch balanced KNN
 
-BBKNN is a fast and intuitive batch effect removal tool that can be directly used in the [scanpy](https://scanpy.readthedocs.io/en/latest/) workflow. It serves as an alternative to `scanpy.api.pp.neighbors()`, with both functions creating a neighbour graph for subsequent use in clustering, pseudotime and UMAP visualisation. The standard approach begins by identifying the k nearest neighbours for each individual cell across the entire data structure, with the candidates being subsequently transformed to exponentially related connectivities before serving as the basis for further analyses. If technical artifacts (be they because of differing data acquisition technologies, protocol alterations or even particularly severe operator effects) are present in the data, they will make it challenging to link corresponding cell types across different batches.
+BBKNN is a fast and intuitive batch effect removal tool that can be directly used in the [scanpy](https://scanpy.readthedocs.io/en/latest/) workflow. It serves as an alternative to `scanpy.pp.neighbors()`, with both functions creating a neighbour graph for subsequent use in clustering, pseudotime and UMAP visualisation. The standard approach begins by identifying the k nearest neighbours for each individual cell across the entire data structure, with the candidates being subsequently transformed to exponentially related connectivities before serving as the basis for further analyses. If technical artifacts (be they because of differing data acquisition technologies, protocol alterations or even particularly severe operator effects) are present in the data, they will make it challenging to link corresponding cell types across different batches.
 
 <p align="center"><img src="figures/batch1.png" alt="KNN" width="50%"></p>
 
@@ -34,19 +34,29 @@ BBKNN can also make use of faiss. Consult the [official installation instruction
 
 ## Usage and Documentation
 
-BBKNN has the option to immediately slot into the spot occupied by `scanpy.api.neighbors()` in the [Seurat-inspired scanpy workflow](https://nbviewer.jupyter.org/github/theislab/scanpy_usage/blob/master/170505_seurat/seurat.ipynb). It computes a batch aligned variant of the neighbourhood graph, with its uses within scanpy including clustering, diffusion map pseudotime inference and UMAP visualisation. The basic syntax to run BBKNN on scanpy's AnnData object (with PCA computed via `scanpy.api.tl.pca()`) is as follows:
+BBKNN has the option to immediately slot into the spot occupied by `scanpy.neighbors()` in the [Seurat-inspired scanpy workflow](https://nbviewer.jupyter.org/github/theislab/scanpy_usage/blob/master/170505_seurat/seurat.ipynb). It computes a batch aligned variant of the neighbourhood graph, with its uses within scanpy including clustering, diffusion map pseudotime inference and UMAP visualisation. The basic syntax to run BBKNN on scanpy's AnnData object (with PCA computed via `scanpy.tl.pca()`) is as follows:
 
 	import bbknn
 	bbknn.bbknn(adata)
 
 You can provide which `adata.obs` column to use for batch discrimination via the `batch_key` parameter. This defaults to `'batch'`, which is created by scanpy when you merge multiple AnnData objects (e.g. if you were to import multiple samples separately and then concatenate them).
 
+Integration can be improved by using ridge regression on both a technical effect and a biological grouping prior to BBKNN, following a workflow from [Park _et al._, 2020](https://science.sciencemag.org/content/367/6480/eaay3224.abstract). In the event of not having a biological grouping at hand, a coarse clustering obtained from a BBKNN-corrected graph can be used in its place. This creates the following workflow basic syntax:
+
+	import bbknn
+	import scanpy
+	bbknn.bbknn(adata)
+	scanpy.tl.leiden(adata)
+	bbknn.ridge_regression(adata, batch_key=['batch'], confounder_key=['leiden'])
+	scanpy.tl.pca(adata)
+	bbknn.bbknn(adata)
+
 Alternately, you can just provide a PCA matrix with cells as rows and a matching vector of batch assignments for each of the cells and call BBKNN as follows (with `connectivities` being the primary graph output of interest):
 
 	import bbknn
 	distances, connectivities, parameters = bbknn.bbknn_pca_matrix(pca_matrix, batch_list)
 
-An HTML render of the BBKNN function docstring, detailing all the parameters, can be accessed at [ReadTheDocs](https://bbknn.readthedocs.io/en/latest/).
+An HTML render of the BBKNN function docstring, detailing all the parameters, can be accessed at [ReadTheDocs](https://bbknn.readthedocs.io/en/latest/). BBKNN use, along with using ridge regression to improve the integration, is shown in a [demonstration notebook](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/demo.ipynb).
 
 ## BBKNN in R
 
@@ -57,7 +67,7 @@ At this point, there is no plan to create a BBKNN R package. However, it can be 
 
 	anndata = import("anndata",convert=FALSE)
 	bbknn = import("bbknn", convert=FALSE)
-	sc = import("scanpy.api",convert=FALSE)
+	sc = import("scanpy",convert=FALSE)
 
 	adata = anndata$AnnData(X=pca, obs=batch)
 	sc$tl$pca(adata)
@@ -70,14 +80,10 @@ When testing locally, faiss refused to work when BBKNN was reticulated. As such,
 
 ## Example Notebooks
 
-**[pancreas.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas.ipynb) is the main demonstration, featuring in-depth annotation and a step by step description/comparison of BBKNN's available options.** 
+**[demo.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/demo.ipynb) is the main demonstration, applying BBKNN to some pancreas data with a batch effect. The notebook also uses ridge regression to improve the integration.** 
 
 The [BBKNN paper](https://doi.org/10.1093/bioinformatics/btz625) makes use of the following analyses:
 - [simulation.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/simulation.ipynb) applies BBKNN to simulated data with a known ground truth, and demonstrates the utility of graph trimming by introducing an unrelated cell population. This simulated data is then used to benchmark BBKNN against mnnCorrect, CCA, Scanorama and Harmony in [benchmark.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark.ipynb), and then finish off with a benchmarking of a BBKNN variant reluctant to work within R/reticulate and visualise the findings in  [benchmark2.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark2.ipynb). [benchmark3-new-R-methods.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/benchmark3-new-R-methods.ipynb) adds some newer R approaches to the benchmark.
 - [mouse.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse.ipynb) runs a collection of murine atlases through BBKNN. [mouse-harmony.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse-harmony.ipynb) applies Harmony to the same data.
 
-The original [BBKNN preprint](https://www.biorxiv.org/content/early/2018/08/22/397042) performed a few more analyses that got ultimately removed. All of the corresponding objects can be downloaded from [ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/](ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/)
-
-- [pancreas-2-mnnCorrect.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-2-mnnCorrect.ipynb), [pancreas-3-CCA.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-3-CCA.ipynb), [pancreas-4-Scanorama.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-4-Scanorama.ipynb), [pancreas-5-Harmony-kBET.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pancreas-5-Harmony-kBET.ipynb) process the pancreas data with the top batch correction packages 2018 had to offer. Some of these run instructions are antiquated by now.
-- [pbmc.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/pbmc.ipynb) runs BBKNN on 10X protocol variant PBMCs.
-- [mouse-exploratory-visualisation.ipynb](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/mouse-exploratory-visualisation.ipynb) is a browser notebook for the murine atlas/transcription factor network objects that can be downloaded from [ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/MouseAtlas.zip](ftp://ngs.sanger.ac.uk/production/teichmann/BBKNN/MouseAtlas.zip)
+The [BBKNN preprint](https://www.biorxiv.org/content/early/2018/08/22/397042) performed some additional analyses that got left out of the final manuscript. Archival notebooks are stored in a [separate repository](https://github.com/Teichlab/bbknn_preprint).

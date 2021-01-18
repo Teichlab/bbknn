@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0
+- add ridge regression preprocessing [https://science.sciencemag.org/content/367/6480/eaay3224.abstract]((Park, 2020))
+- require batches to feature a minimum of `neighbors_within_batch` cells each
+- rework demo notebook, remove old preprint notebooks to [separate repository](https://github.com/Teichlab/bbknn_preprint)
+
 ## 1.3.12
 - add packaging as a dependency in `setup.py`
 
