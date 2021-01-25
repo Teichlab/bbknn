@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'BBKNN'
-copyright = '2018-2020, Krzysztof Polanski, Jongeun Park'
+copyright = '2018-2021, Krzysztof Polanski, Jongeun Park'
 author = 'Krzysztof Polanski, Jongeun Park'
 
 # The short X.Y version
