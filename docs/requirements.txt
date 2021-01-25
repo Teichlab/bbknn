@@ -1,3 +1,4 @@
 sphinx>=1.7.5
 pip>=19.0
 numpy
+llvmlite==0.30.0
