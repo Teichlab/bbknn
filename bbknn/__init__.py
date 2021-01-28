@@ -211,7 +211,7 @@ def trimming(cnts,trim):
 		cnts = cnts.T.tocsr()
 	return cnts
 
-def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angular', copy=False, **kwargs):
+def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='cosine', copy=False, **kwargs):
 	'''
 	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
 	each batch separately instead of the entire cell pool with no accounting for batch.
@@ -248,8 +248,8 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 		If ``approx=False`` and the metric is "euclidean", use the faiss package to compute
 		nearest neighbours if installed. This improves performance at a minor cost to numerical
 		precision as faiss operates on float32.
-	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default: "angular")
-		What distance metric to use. If using ``approx=True``, the options are "angular",
+	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default: "cosine")
+		What distance metric to use. If using ``approx=True``, the options are "cosine",
 		"euclidean", "manhattan" and "hamming". Otherwise, the options are "euclidean",
 		a member of the ``sklearn.neighbors.KDTree.valid_metrics`` list, or parameterised
 		``sklearn.neighbors.DistanceMetric`` `objects
@@ -280,7 +280,7 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	if use_rep not in adata.obsm.keys():
 		raise ValueError("Did not find "+use_rep+" in `.obsm.keys()`. You need to compute it first.")
 	#metric sanity checks
-	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming', 'cosine']:
+	if approx and metric not in ['euclidean', 'manhattan', 'hamming', 'cosine']:
 		logg.warning('unrecognised metric for type of neighbor calculation, switching to cosine (')
 		metric = 'cosine'
 	elif not approx and not (metric=='euclidean' or isinstance(metric,DistanceMetric) or metric in KDTree.valid_metrics):
@@ -317,7 +317,7 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	return adata if copy else None
 
 def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
-		  approx=True, n_trees=10, use_faiss=True, metric='angular',
+		  approx=True, n_trees=10, use_faiss=True, metric='cosine',
 		  set_op_mix_ratio=1, local_connectivity=1):
 	'''
 	Scanpy-independent BBKNN variant that runs on a PCA matrix and list of per-cell batch assignments instead of
