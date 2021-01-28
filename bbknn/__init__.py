@@ -280,9 +280,9 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	if use_rep not in adata.obsm.keys():
 		raise ValueError("Did not find "+use_rep+" in `.obsm.keys()`. You need to compute it first.")
 	#metric sanity checks
-	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
-		logg.warning('unrecognised metric for type of neighbor calculation, switching to angular')
-		metric = 'angular'
+	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming', 'cosine']:
+		logg.warning('unrecognised metric for type of neighbor calculation, switching to cosine (')
+		metric = 'cosine'
 	elif not approx and not (metric=='euclidean' or isinstance(metric,DistanceMetric) or metric in KDTree.valid_metrics):
 		logg.warning('unrecognised metric for type of neighbor calculation, switching to euclidean')
 		metric = 'euclidean'
