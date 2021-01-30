@@ -86,7 +86,11 @@ def create_tree(data,approx,metric,use_faiss,n_trees):
 		PCA coordinates of a batch's cells to index.
 	'''
 	if approx:
-		ckd = AnnoyIndex(data.shape[1],metric=metric)
+		if metric == 'cosine':
+			annoy_metric = 'angular'
+		else:
+			annoy_metric = metric
+		ckd = AnnoyIndex(data.shape[1],metric=annoy_metric)
 		for i in np.arange(data.shape[0]):
 			ckd.add_item(i,data[i,:])
 		ckd.build(n_trees)
@@ -213,7 +217,7 @@ def trimming(cnts,trim):
 
 def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='cosine', copy=False, **kwargs):
 	'''
-	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
+	Badistances = get_sparse_matrix_from_indices_distances_umap(knn_indices, knn_dists, n_obs, n_neighbors)tch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
 	each batch separately instead of the entire cell pool with no accounting for batch.
 	Aligns batches in a quick and lightweight manner.
 	For use in the scanpy workflow as an alternative to ``scanpi.api.pp.neighbors()``.
