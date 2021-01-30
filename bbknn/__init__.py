@@ -71,7 +71,8 @@ def compute_connectivities_umap(knn_indices, knn_dists,
 	if isinstance(connectivities, tuple):
 		# In umap-learn 0.4, this returns (result, sigmas, rhos)
 		connectivities = connectivities[0]
-	distances = get_sparse_matrix_from_indices_distances_umap(knn_indices, knn_dists, n_obs, n_neighbors)
+	distances = get_sparse_matrix_from_indices_distances_umap(knn_indices, knn_dists, n_obsunrecognised metric for type of neighbor calculation, switching to angular
+, n_neighbors)
 
 	return distances, connectivities.tocsr()
 
@@ -343,9 +344,9 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 	if np.min(counts) < neighbors_within_batch:
 		raise ValueError("Not all batches have at least `neighbors_within_batch` cells in them.")
 	#metric sanity checks (duplicating the ones in bbknn(), but without scanpy logging)
-	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
-		print('unrecognised metric for type of neighbor calculation, switching to angular')
-		metric = 'angular'
+	if approx and metric not in ['cosine', 'euclidean', 'manhattan', 'hamming']:
+		print('unrecognised metric for type of neighbor calculation, switching to cosine')
+		metric = 'cosine'
 	elif not approx and not (metric=='euclidean' or isinstance(metric,DistanceMetric) or metric in KDTree.valid_metrics):
 		print('unrecognised metric for type of neighbor calculation, switching to euclidean')
 		metric = 'euclidean'
