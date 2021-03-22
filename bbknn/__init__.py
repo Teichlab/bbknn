@@ -203,8 +203,6 @@ def trimming(cnts,trim):
 		for i in range(cnts.shape[0]):
 			#Get the row slice, not a copy, only the non zero elements
 			row_array = cnts.data[cnts.indptr[i]: cnts.indptr[i+1]]
-			if row_array.shape[0] <= trim:
-				continue
 			#apply cutoff
 			row_array[row_array<vals[i]] = 0
 		cnts.eliminate_zeros()
@@ -216,7 +214,7 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
 	each batch separately instead of the entire cell pool with no accounting for batch.
 	Aligns batches in a quick and lightweight manner.
-	For use in the scanpy workflow as an alternative to ``scanpi.api.pp.neighbors()``.
+	For use in the scanpy workflow as an alternative to ``scanpi.pp.neighbors()``.
 
 	Input
 	-----
@@ -225,8 +223,10 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	batch_key : ``str``, optional (default: "batch")
 		``adata.obs`` column name discriminating between your batches.
 	neighbors_within_batch : ``int``, optional (default: 3)
-		How many top neighbours to report for each batch; total number of neighbours
-		will be this number times the number of batches.
+		How many top neighbours to report for each batch; total number of neighbours in 
+		the initial k-nearest-neighbours computation will be this number times the number 
+		of batches. This then serves as the basis for the construction of a symmetrical 
+		matrix of connectivities.
 	use_rep : ``str``, optional (default: "X_pca")
 		The dimensionality reduction in ``.obsm`` to use for neighbour detection. Defaults to PCA.
 	n_pcs : ``int``, optional (default: 50)
@@ -235,8 +235,8 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 		Trim the neighbours of each cell to these many top connectivities. May help with
 		population independence and improve the tidiness of clustering. The lower the value the
 		more independent the individual populations, at the cost of more conserved batch effect.
-		If ``None``, sets the parameter value automatically to 10 times the total number of
-		neighbours for each cell. Set to 0 to skip.
+		If ``None``, sets the parameter value automatically to 10 times ``neighbors_within_batch`` 
+		times the number of batches. Set to 0 to skip.
 	approx : ``bool``, optional (default: ``True``)
 		If ``True``, use annoy's approximate neighbour finding. This results in a quicker run time
 		for large datasets while also potentially increasing the degree of batch correction.

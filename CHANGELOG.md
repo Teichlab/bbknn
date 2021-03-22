@@ -1,7 +1,11 @@
 # Changelog
 
+## 1.4.1
+- remove trimming bug which would lead to an asymmetric matrix for cells with a neighbour count very near the threshold (spotted by E. Dann)
+- clarify docstring, neighbour counts are there for the initial KNN computation
+
 ## 1.4.0
-- add ridge regression preprocessing [https://science.sciencemag.org/content/367/6480/eaay3224.abstract]((Park, 2020))
+- add ridge regression preprocessing like in [https://science.sciencemag.org/content/367/6480/eaay3224.abstract](Park, 2020)
 - require batches to feature a minimum of `neighbors_within_batch` cells each
 - rework demo notebook, remove old preprint notebooks to [separate repository](https://github.com/Teichlab/bbknn_preprint)
 
