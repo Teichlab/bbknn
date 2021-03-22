@@ -86,7 +86,11 @@ def create_tree(data,approx,metric,use_faiss,n_trees):
 		PCA coordinates of a batch's cells to index.
 	'''
 	if approx:
-		ckd = AnnoyIndex(data.shape[1],metric=metric)
+		if metric == 'cosine':
+			annoy_metric = 'angular'
+		else:
+			annoy_metric = metric
+		ckd = AnnoyIndex(data.shape[1],metric=annoy_metric)
 		for i in np.arange(data.shape[0]):
 			ckd.add_item(i,data[i,:])
 		ckd.build(n_trees)
@@ -209,9 +213,9 @@ def trimming(cnts,trim):
 		cnts = cnts.T.tocsr()
 	return cnts
 
-def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angular', copy=False, **kwargs):
+def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='cosine', copy=False, **kwargs):
 	'''
-	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
+	Badistances = get_sparse_matrix_from_indices_distances_umap(knn_indices, knn_dists, n_obs, n_neighbors)tch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
 	each batch separately instead of the entire cell pool with no accounting for batch.
 	Aligns batches in a quick and lightweight manner.
 	For use in the scanpy workflow as an alternative to ``scanpy.pp.neighbors()``.
@@ -248,8 +252,8 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 		If ``approx=False`` and the metric is "euclidean", use the faiss package to compute
 		nearest neighbours if installed. This improves performance at a minor cost to numerical
 		precision as faiss operates on float32.
-	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default: "angular")
-		What distance metric to use. If using ``approx=True``, the options are "angular",
+	metric : ``str`` or ``sklearn.neighbors.DistanceMetric``, optional (default: "cosine")
+		What distance metric to use. If using ``approx=True``, the options are "cosine",
 		"euclidean", "manhattan" and "hamming". Otherwise, the options are "euclidean",
 		a member of the ``sklearn.neighbors.KDTree.valid_metrics`` list, or parameterised
 		``sklearn.neighbors.DistanceMetric`` `objects
@@ -280,9 +284,9 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	if use_rep not in adata.obsm.keys():
 		raise ValueError("Did not find "+use_rep+" in `.obsm.keys()`. You need to compute it first.")
 	#metric sanity checks
-	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
-		logg.warning('unrecognised metric for type of neighbor calculation, switching to angular')
-		metric = 'angular'
+	if approx and metric not in ['euclidean', 'manhattan', 'hamming', 'cosine']:
+		logg.warning('unrecognised metric for type of neighbor calculation, switching to cosine (')
+		metric = 'cosine'
 	elif not approx and not (metric=='euclidean' or isinstance(metric,DistanceMetric) or metric in KDTree.valid_metrics):
 		logg.warning('unrecognised metric for type of neighbor calculation, switching to euclidean')
 		metric = 'euclidean'
@@ -317,7 +321,7 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='angula
 	return adata if copy else None
 
 def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
-		  approx=True, n_trees=10, use_faiss=True, metric='angular',
+		  approx=True, n_trees=10, use_faiss=True, metric='cosine',
 		  set_op_mix_ratio=1, local_connectivity=1):
 	'''
 	Scanpy-independent BBKNN variant that runs on a PCA matrix and list of per-cell batch assignments instead of
@@ -343,9 +347,9 @@ def bbknn_pca_matrix(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=N
 	if np.min(counts) < neighbors_within_batch:
 		raise ValueError("Not all batches have at least `neighbors_within_batch` cells in them.")
 	#metric sanity checks (duplicating the ones in bbknn(), but without scanpy logging)
-	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
-		print('unrecognised metric for type of neighbor calculation, switching to angular')
-		metric = 'angular'
+	if approx and metric not in ['cosine', 'euclidean', 'manhattan', 'hamming']:
+		print('unrecognised metric for type of neighbor calculation, switching to cosine')
+		metric = 'cosine'
 	elif not approx and not (metric=='euclidean' or isinstance(metric,DistanceMetric) or metric in KDTree.valid_metrics):
 		print('unrecognised metric for type of neighbor calculation, switching to euclidean')
 		metric = 'euclidean'
