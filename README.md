@@ -4,7 +4,7 @@ BBKNN is a fast and intuitive batch effect removal tool that can be directly use
 
 <p align="center"><img src="figures/batch1.png" alt="KNN" width="50%"></p>
 
-As such, BBKNN actively combats this effect by splitting your data into batches and finding a smaller number of neighbours for each cell within each of the groups. This helps create connections between analogous cells in different batches without altering the counts or PCA space.
+As such, BBKNN actively combats this effect by taking each cell and identifying a (smaller) k nearest neighbours in each batch separately, rather than the dataset as a whole. These nearest neighbours for each batch are then merged into a final neighbour list for the cell. This helps create connections between analogous cells in different batches without altering the counts or PCA space.
 
 <p align="center"><img src="figures/batch2.png" alt="BBKNN" width="50%"></p>
 
