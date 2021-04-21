@@ -74,7 +74,9 @@ At this point, there is no plan to create a BBKNN R package. However, it can be 
 	adata$obsm$X_pca = pca
 	bbknn$bbknn(adata,batch_key=0)
 	sc$tl$umap(adata)
-	umap = py_to_r(adata$obsm$X_umap)
+	umap = py_to_r(adata$obsm[["X_umap"]])
+
+If you wish to change any integer arguments (such as `neighbors_within_batch`), you'll have to `as.integer()` the value so python understands it as an integer.
 
 When testing locally, faiss refused to work when BBKNN was reticulated. As such, provide `use_faiss=FALSE` to the BBKNN call if you run into this problem.
 
