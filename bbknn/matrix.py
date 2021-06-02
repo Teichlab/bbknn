@@ -16,10 +16,6 @@ try:
 except ImportError:
 	pass
 try:
-	import anndata
-except ImportError:
-	pass
-try:
 	import faiss
 except ImportError:
 	pass
@@ -196,7 +192,7 @@ def get_graph(pca, batch_list, params):
 			knn_distances[ind_from[:,None],col_range[None,:]] = ckdout[0]
 	return knn_distances, knn_indices
 
-def check_knn_metric(params, counts):
+def check_knn_metric(params, counts, scanpy_logging=False):
 	'''
 	Checks if the provided metric can be used with the implied KNN algorithm. Returns parameters
 	with the metric altered and the KNN algorithm stated outright in params['computation'].
@@ -207,13 +203,17 @@ def check_knn_metric(params, counts):
 		A dictionary of arguments used to call ``bbknn.matrix.bbknn()``
 	counts : ``np.array``
 		The number of cells in each batch
+	scanpy_logging : ``bool``, optional (default: ``False``)
+		Whether to use scanpy logging to print updates rather than a ``print()``
 	'''
+	#take note if we end up going back to Euclidean
+	swapped = False
 	if params['approx']:
 		#we're approximate
 		if params['use_annoy']:
 			params['computation'] = 'annoy'
 			if params['metric'] not in ['angular', 'euclidean', 'manhattan', 'hamming']:
-				print('unrecognised metric for type of neighbor calculation, switching to euclidean')
+				swapped = True
 				params['metric'] = 'euclidean'
 		else:
 			params['computation'] = 'pynndescent'
@@ -223,7 +223,7 @@ def check_knn_metric(params, counts):
 			#metric needs to be a function or in the named list
 			if not (params['metric'] in pynndescent.distances.named_distances or
 					isinstance(params['metric'], types.FunctionType)):
-				print('unrecognised metric for type of neighbor calculation, switching to euclidean')
+				swapped = True
 				params['metric'] = 'euclidean'
 	else:
 		#we're not approximate
@@ -231,15 +231,21 @@ def check_knn_metric(params, counts):
 		if not (params['metric']=='euclidean' or 
 				isinstance(params['metric'], DistanceMetric) or 
 				params['metric'] in KDTree.valid_metrics):
-			print('unrecognised metric for type of neighbor calculation, switching to euclidean')
+			swapped = True
 			params['metric'] = 'euclidean'
 		if params['metric']=='euclidean':
-			if 'faiss' in sys.modules and use_faiss:
+			if 'faiss' in sys.modules and params['use_faiss']:
 				params['computation']='faiss'
 			else:
 				params['computation']='cKDTree'
 		else:
 			params['computation']='KDTree'
+	if swapped:
+		#need to let the user know we swapped the metric
+		if scanpy_logging:
+			logg.warning('unrecognised metric for type of neighbor calculation, switching to euclidean')
+		else:
+			print('unrecognised metric for type of neighbor calculation, switching to euclidean')
 	return params
 
 def trimming(cnts,trim):

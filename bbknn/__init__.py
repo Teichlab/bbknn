@@ -3,9 +3,8 @@ import numpy as np
 import scipy
 import sys
 from bbknn.matrix import bbknn as bbknn_matrix
+from bbknn.matrix import check_knn_metric
 from packaging import version
-from scipy.sparse import coo_matrix
-from umap.umap_ import fuzzy_simplicial_set
 from sklearn.linear_model import Ridge
 try:
 	from scanpy import logging as logg
@@ -17,7 +16,8 @@ except ImportError:
 	pass
 
 
-def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='euclidean', copy=False, **kwargs):
+def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, use_annoy=True, 
+		  metric='euclidean', copy=False, **kwargs):
 	'''
 	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
 	each batch separately instead of the entire cell pool with no accounting for batch. 
@@ -80,7 +80,7 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='euclid
 		and custom functions, including compiled Numba code.
 		
 		>>> pynndescent.distances.named_distances.keys()
-		>>> dict_keys(['euclidean', 'l2', 'sqeuclidean', 'manhattan', 'taxicab', 'l1', 'chebyshev', 'linfinity', 
+		dict_keys(['euclidean', 'l2', 'sqeuclidean', 'manhattan', 'taxicab', 'l1', 'chebyshev', 'linfinity', 
 		'linfty', 'linf', 'minkowski', 'seuclidean', 'standardised_euclidean', 'wminkowski', 'weighted_minkowski', 
 		'mahalanobis', 'canberra', 'cosine', 'dot', 'correlation', 'hellinger', 'haversine', 'braycurtis', 'spearmanr', 
 		'kantorovich', 'wasserstein', 'tsss', 'true_angular', 'hamming', 'jaccard', 'dice', 'matching', 'kulsinski', 
@@ -92,7 +92,6 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='euclid
 
 		>>> sklearn.neighbors.KDTree.valid_metrics
 		['p', 'chebyshev', 'cityblock', 'minkowski', 'infinity', 'l2', 'euclidean', 'manhattan', 'l1']
-		>>> pass_this_as_metric = neighbors.DistanceMetric.get_metric('minkowski',p=3)
 	set_op_mix_ratio : ``float``, optional (default: 1)
 		UMAP connectivity computation parameter, float between 0 and 1, controlling the
 		blend between a connectivity matrix formed exclusively from mutual nearest neighbour
@@ -113,19 +112,17 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, metric='euclid
 	#do we have a computed PCA?
 	if use_rep not in adata.obsm.keys():
 		raise ValueError("Did not find "+use_rep+" in `.obsm.keys()`. You need to compute it first.")
-	#metric sanity checks
-	if approx and metric not in ['angular', 'euclidean', 'manhattan', 'hamming']:
-		logg.warning('unrecognised metric for type of neighbor calculation, switching to angular')
-		metric = 'euclidean'
-	elif not approx and not (metric=='euclidean' or isinstance(metric,DistanceMetric) or metric in KDTree.valid_metrics):
-		logg.warning('unrecognised metric for type of neighbor calculation, switching to euclidean')
-		metric = 'euclidean'
-	#prepare bbknn_pca_matrix input
+	#metric sanity checks, using the bbknn.matrix function
+	#set up a fake params with the arguments that impact the metric correction outcome
+	params = {'approx':approx, 'use_annoy':use_annoy, 'metric':metric, 'use_faiss':False}
+	params = check_knn_metric(params, adata.obs[batch_key].value_counts(), True)
+	#this fake params has the corrected metric, and appropriate logging was made
+	#prepare bbknn.matrix.bbknn input
 	pca = adata.obsm[use_rep]
 	batch_list = adata.obs[batch_key].values
 	#call BBKNN proper
-	bbknn_out = bbknn_matrix(pca=pca, batch_list=batch_list,
-							 approx=approx, metric=metric, **kwargs)
+	bbknn_out = bbknn_matrix(pca=pca, batch_list=batch_list, approx=approx,
+							 use_annoy=use_annoy, metric=params['metric'], **kwargs)
 	#store the parameters in .uns['neighbors']['params'], add use_rep and batch_key
 	adata.uns['neighbors'] = {}
 	adata.uns['neighbors']['params'] = bbknn_out[2]

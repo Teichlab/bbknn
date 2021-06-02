@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.5.1
+- correctly check for pynndescent metric space in `bbknn.bbknn()`
+
 ## 1.5.0
 - pynndescent support (suggested by G. Palla)
 - default metric set to Euclidean
