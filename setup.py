@@ -2,11 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
 	name='bbknn',
-	version='1.4.1',
+	version='1.5.0',
 	description='Batch balanced KNN',
 	url='https://github.com/Teichlab/bbknn',
 	packages=find_packages(exclude=['docs', 'figures', 'examples']),
-	install_requires=['Cython','numpy','scipy','annoy','umap-learn','scikit-learn','packaging'],
+	install_requires=['Cython','numpy','scipy','annoy','pynndescent','umap-learn','scikit-learn','packaging'],
 	extras_require=dict(
 		faiss=['faiss']
 	),

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0
+- pynndescent support (suggested by G. Palla)
+- default metric set to Euclidean
+- code refactoring; impactful changes:
+  - innards relocated to `bbknn.matrix`, `bbknn.bbknn_pca_matrix()` is now `bbknn.matrix.bbknn()`
+  - `n_trees` is now `annoy_n_trees`
+
 ## 1.4.1
 - remove trimming bug which would lead to an asymmetric matrix for cells with a neighbour count very near the threshold (spotted by E. Dann)
 - clarify docstring, neighbour counts are there for the initial KNN computation

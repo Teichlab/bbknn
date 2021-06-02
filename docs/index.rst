@@ -9,4 +9,7 @@ BBKNN
 =====
 
 .. automodule:: bbknn
-   :members:  bbknn, bbknn_pca_matrix, ridge_regression, extract_cell_connectivity
+   :members:  bbknn, ridge_regression, extract_cell_connectivity
+
+.. automodule:: bbknn.matrix
+   :members:  bbknn

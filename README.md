@@ -22,7 +22,7 @@ If you use BBKNN in your work, please cite the [paper](https://doi.org/10.1093/b
 
 ## Installation
 
-BBKNN depends on Cython, numpy, scipy, annoy, umap-learn and scikit-learn. The package is available on pip and conda, and can be easily installed as follows:
+BBKNN depends on Cython, numpy, scipy, annoy, pynndescent, umap-learn and scikit-learn. The package is available on pip and conda, and can be easily installed as follows:
 
 	pip3 install bbknn
 
@@ -53,8 +53,8 @@ Integration can be improved by using ridge regression on both a technical effect
 
 Alternately, you can just provide a PCA matrix with cells as rows and a matching vector of batch assignments for each of the cells and call BBKNN as follows (with `connectivities` being the primary graph output of interest):
 
-	import bbknn
-	distances, connectivities, parameters = bbknn.bbknn_pca_matrix(pca_matrix, batch_list)
+	import bbknn.matrix
+	distances, connectivities, parameters = bbknn.matrix.bbknn(pca_matrix, batch_list)
 
 An HTML render of the BBKNN function docstring, detailing all the parameters, can be accessed at [ReadTheDocs](https://bbknn.readthedocs.io/en/latest/). BBKNN use, along with using ridge regression to improve the integration, is shown in a [demonstration notebook](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/demo.ipynb).
 
