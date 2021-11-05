@@ -309,24 +309,18 @@ def trimming(cnts, trim):
     cnts : ``CSR``
             Sparse matrix of processed connectivities to trim.
     """
-    vals = np.zeros(cnts.shape[0])
-    for i in range(cnts.shape[0]):
-        # Get the row slice, not a copy, only the non zero elements
-        row_array = cnts.data[cnts.indptr[i] : cnts.indptr[i + 1]]
-        if row_array.shape[0] <= trim:
-            continue
-        # fish out the threshold value
-        vals[i] = row_array[np.argsort(row_array)[-1 * trim]]
-    for iter in range(2):
-        # filter rows, flip, filter columns using the same thresholds
-        for i in range(cnts.shape[0]):
-            # Get the row slice, not a copy, only the non zero elements
-            row_array = cnts.data[cnts.indptr[i] : cnts.indptr[i + 1]]
-            # apply cutoff
-            row_array[row_array < vals[i]] = 0
-        cnts.eliminate_zeros()
-        cnts = cnts.T.tocsr()
-    return cnts
+
+    from ctxbio.stats.utils import row_topk_csr
+    indptr = cnts.indptr
+    indices, data = row_topk_csr(
+                    cnts.data,
+                    cnts.indices,
+                    cnts.indptr,
+                    trim,
+                )
+    indptr = np.arange(0, data.flatten().shape[0] + 1, trim)
+    new_cnts = scipy.sparse.csr_matrix((data.flatten(), indices.flatten(), indptr))
+    return new_cnts
 
 
 def bbknn(
