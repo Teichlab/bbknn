@@ -200,9 +200,9 @@ def legacy_computation_selection(params, scanpy_logging=False):
 	if any([params[i] is not None for i in ['approx','use_annoy','use_faiss']]):
 		#encourage upgrading the call
 		if scanpy_logging:
-			logg.warning('consider switching your call to make use of the computation argument')
+			logg.warning('consider switching your call to make use of `computation`')
 		else:
-			print('consider switching your call to make use of the computation argument')
+			print('consider switching your call to make use of `computation`')
 		#fill in any missing defaults
 		if params['approx'] is None:
 			params['approx'] = True
@@ -267,7 +267,7 @@ def check_knn_metric(params, counts, scanpy_logging):
 			#and now for a next level swap - this can be done more efficiently via cKDTree
 			params['computation'] = 'cKDTree'
 	else:
-		raise ValueError("Incorrect value of the computation argument.")
+		raise ValueError("Incorrect value of `computation`.")
 	if swapped:
 		#go back to euclidean
 		params['metric'] = 'euclidean'
