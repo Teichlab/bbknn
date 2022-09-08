@@ -137,7 +137,7 @@ def query_tree(data, ckd, params):
 		#the distance returned by faiss needs to be square rooted to be actual euclidean
 		ckdout = (np.sqrt(D), I)
 	elif params['computation'] == 'cKDTree':
-		ckdout = ckd.query(x=data, k=params['neighbors_within_batch'], n_jobs=-1)
+		ckdout = ckd.query(x=data, k=params['neighbors_within_batch'], workers=-1)
 	elif params['computation'] == 'KDTree':
 		ckdout = ckd.query(data, k=params['neighbors_within_batch'])
 	return ckdout
