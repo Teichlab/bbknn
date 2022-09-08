@@ -173,8 +173,13 @@ def get_graph(pca, batch_list, params):
 		ind_to = np.arange(len(batch_list))[mask_to]
 		#create the faiss/cKDTree/KDTree/annoy, depending on approx/metric
 		ckd = create_tree(data=pca[mask_to,:params['n_pcs']], params=params)
+		#fish the neighbours out, getting a (distances, indices) tuple back
 		ckdout = query_tree(data=pca[:,:params['n_pcs']], ckd=ckd, params=params)
+		#save the results within the appropriate columns of the structures
+		#this batch gets the to_ind'th interval neighbors_within_batch wide
 		col_range = np.arange(to_ind*params['neighbors_within_batch'], (to_ind+1)*params['neighbors_within_batch'])
+		#the identified indices are relative to the subsetted PCA matrix
+		#so we need to convert it back to the original row numbers
 		knn_indices[:,col_range] = ind_to[ckdout[1]]
 		knn_distances[:,col_range] = ckdout[0]
 	return knn_distances, knn_indices
