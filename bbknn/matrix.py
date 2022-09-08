@@ -1,3 +1,4 @@
+import warnings
 import pandas as pd
 import numpy as np
 import scipy
@@ -184,7 +185,23 @@ def get_graph(pca, batch_list, params):
 		knn_distances[:,col_range] = ckdout[0]
 	return knn_distances, knn_indices
 
-def legacy_computation_selection(params, scanpy_logging=False):
+def print_warning(message, scanpy_logging):
+	'''
+	Print a specified warning to the screen, using either warnings or scanpy.
+	
+	Input
+	-----
+	message : ``str``
+		The warning message to print
+	scanpy_logging : ``bool``
+		Whether to use scanpy logging to print updates rather than ``warnings.warn()``
+	'''
+	if scanpy_logging:
+		logg.warning(message)
+	else:
+		warnings.warn(message)
+
+def legacy_computation_selection(params, scanpy_logging):
 	'''
 	Do pre-1.6.0 computation algorithm selection based on possible legacy arguments. Looks 
 	at the following (default None) parameters: approx, use_annoy, use_faiss
@@ -193,16 +210,13 @@ def legacy_computation_selection(params, scanpy_logging=False):
 	-----
 	params : ``dict``
 		A dictionary of arguments used to call ``bbknn.matrix.bbknn()``
-	scanpy_logging : ``bool``, optional (default: ``False``)
+	scanpy_logging : ``bool``
 		Whether to use scanpy logging to print updates rather than a ``print()``
 	'''
 	#if these are not None then they were set at the time of the call
 	if any([params[i] is not None for i in ['approx','use_annoy','use_faiss']]):
 		#encourage upgrading the call
-		if scanpy_logging:
-			logg.warning('consider switching your call to make use of `computation`')
-		else:
-			print('consider switching your call to make use of `computation`')
+		print_warning('consider updating your call to make use of `computation`', scanpy_logging)
 		#fill in any missing defaults
 		if params['approx'] is None:
 			params['approx'] = True
@@ -239,7 +253,7 @@ def check_knn_metric(params, counts, scanpy_logging):
 		A dictionary of arguments used to call ``bbknn.matrix.bbknn()``
 	counts : ``np.array``
 		The number of cells in each batch
-	scanpy_logging : ``bool``, optional (default: ``False``)
+	scanpy_logging : ``bool``
 		Whether to use scanpy logging to print updates rather than a ``print()``
 	'''
 	#take note if we end up going back to Euclidean
@@ -272,10 +286,7 @@ def check_knn_metric(params, counts, scanpy_logging):
 		#go back to euclidean
 		params['metric'] = 'euclidean'
 		#need to let the user know we swapped the metric
-		if scanpy_logging:
-			logg.warning('unrecognised metric for type of neighbor calculation, switching to euclidean')
-		else:
-			print('unrecognised metric for type of neighbor calculation, switching to euclidean')
+		print_warning('unrecognised metric for type of neighbor calculation, switching to euclidean', scanpy_logging)
 	return params
 
 def trimming(cnts,trim):
