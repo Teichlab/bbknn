@@ -173,10 +173,10 @@ def get_graph(pca, batch_list, params):
 		ind_to = np.arange(len(batch_list))[mask_to]
 		#create the faiss/cKDTree/KDTree/annoy, depending on approx/metric
 		ckd = create_tree(data=pca[mask_to,:params['n_pcs']], params=params)
-                ckdout = query_tree(data=pca[:,:params['n_pcs']], ckd=ckd, params=params)
-                col_range = np.arange(to_ind*params['neighbors_within_batch'], (to_ind+1)*params['neighbors_within_batch'])
-                knn_indices[:,col_range[None,:]] = ind_to[ckdout[1]]
-                knn_distances[:,col_range[None,:]] = ckdout[0]
+		ckdout = query_tree(data=pca[:,:params['n_pcs']], ckd=ckd, params=params)
+		col_range = np.arange(to_ind*params['neighbors_within_batch'], (to_ind+1)*params['neighbors_within_batch'])
+		knn_indices[:,col_range] = ind_to[ckdout[1]]
+		knn_distances[:,col_range] = ckdout[0]
 	return knn_distances, knn_indices
 
 def check_knn_metric(params, counts, scanpy_logging=False):
