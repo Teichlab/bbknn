@@ -211,7 +211,7 @@ def legacy_computation_selection(params, scanpy_logging):
 	params : ``dict``
 		A dictionary of arguments used to call ``bbknn.matrix.bbknn()``
 	scanpy_logging : ``bool``
-		Whether to use scanpy logging to print updates rather than a ``print()``
+		Whether to use scanpy logging to print updates rather than ``warnings.warn()``
 	'''
 	#if these are not None then they were set at the time of the call
 	if any([params[i] is not None for i in ['approx','use_annoy','use_faiss']]):
@@ -254,7 +254,7 @@ def check_knn_metric(params, counts, scanpy_logging):
 	counts : ``np.array``
 		The number of cells in each batch
 	scanpy_logging : ``bool``
-		Whether to use scanpy logging to print updates rather than a ``print()``
+		Whether to use scanpy logging to print updates rather than ``warnings.warn()``
 	'''
 	#take note if we end up going back to Euclidean
 	swapped = False
@@ -336,7 +336,7 @@ def bbknn(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
 	batch_list : ``numpy.array`` or ``list``
 		A list of batch assignments for each cell.
 	scanpy_logging : ``bool``, optional (default: ``False``)
-		Whether to use scanpy logging to print updates rather than a ``print()``
+		Whether to use scanpy logging to print updates rather than ``warnings.warn()``
 	'''
 	#catch all arguments for easy passing to subsequent functions
 	params = locals()
