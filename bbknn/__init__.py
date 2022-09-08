@@ -2,8 +2,6 @@ import pandas as pd
 import numpy as np
 import scipy
 import sys
-from bbknn.matrix import bbknn as bbknn_matrix
-from bbknn.matrix import check_knn_metric
 from packaging import version
 from sklearn.linear_model import Ridge
 try:
@@ -15,6 +13,7 @@ try:
 except ImportError:
 	pass
 
+from . import matrix
 
 def bbknn(adata, batch_key='batch', use_rep='X_pca', copy=False, **kwargs):
 	'''
@@ -115,7 +114,7 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', copy=False, **kwargs):
 	pca = adata.obsm[use_rep]
 	batch_list = adata.obs[batch_key].values
 	#call BBKNN proper, telling it to use scanpy logging for its internal things
-	bbknn_out = bbknn_matrix(pca=pca, batch_list=batch_list, scanpy_logging=True, **kwargs)
+	bbknn_out = matrix.bbknn(pca=pca, batch_list=batch_list, scanpy_logging=True, **kwargs)
 	#store the parameters in .uns['neighbors']['params'], add use_rep and batch_key
 	adata.uns['neighbors'] = {}
 	adata.uns['neighbors']['params'] = bbknn_out[2]
