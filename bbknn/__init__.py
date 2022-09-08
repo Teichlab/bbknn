@@ -16,8 +16,7 @@ except ImportError:
 	pass
 
 
-def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, use_annoy=True, 
-		  metric='euclidean', copy=False, **kwargs):
+def bbknn(adata, batch_key='batch', use_rep='X_pca', copy=False, **kwargs):
 	'''
 	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
 	each batch separately instead of the entire cell pool with no accounting for batch. 
@@ -112,17 +111,11 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', approx=True, use_annoy=True
 	#do we have a computed PCA?
 	if use_rep not in adata.obsm.keys():
 		raise ValueError("Did not find "+use_rep+" in `.obsm.keys()`. You need to compute it first.")
-	#metric sanity checks, using the bbknn.matrix function
-	#set up a fake params with the arguments that impact the metric correction outcome
-	params = {'approx':approx, 'use_annoy':use_annoy, 'metric':metric, 'use_faiss':False}
-	params = check_knn_metric(params, adata.obs[batch_key].value_counts(), True)
-	#this fake params has the corrected metric, and appropriate logging was made
 	#prepare bbknn.matrix.bbknn input
 	pca = adata.obsm[use_rep]
 	batch_list = adata.obs[batch_key].values
-	#call BBKNN proper
-	bbknn_out = bbknn_matrix(pca=pca, batch_list=batch_list, approx=approx,
-							 use_annoy=use_annoy, metric=params['metric'], **kwargs)
+	#call BBKNN proper, telling it to use scanpy logging for its internal things
+	bbknn_out = bbknn_matrix(pca=pca, batch_list=batch_list, scanpy_logging=True, **kwargs)
 	#store the parameters in .uns['neighbors']['params'], add use_rep and batch_key
 	adata.uns['neighbors'] = {}
 	adata.uns['neighbors']['params'] = bbknn_out[2]

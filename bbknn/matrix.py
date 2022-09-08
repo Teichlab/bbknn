@@ -184,10 +184,54 @@ def get_graph(pca, batch_list, params):
 		knn_distances[:,col_range] = ckdout[0]
 	return knn_distances, knn_indices
 
-def check_knn_metric(params, counts, scanpy_logging=False):
+def legacy_computation_selection(params, scanpy_logging=False):
+	'''
+	Do pre-1.6.0 computation algorithm selection based on possible legacy arguments. Looks 
+	at the following (default None) parameters: approx, use_annoy, use_faiss
+	
+	Input
+	-----
+	params : ``dict``
+		A dictionary of arguments used to call ``bbknn.matrix.bbknn()``
+	scanpy_logging : ``bool``, optional (default: ``False``)
+		Whether to use scanpy logging to print updates rather than a ``print()``
+	'''
+	#if these are not None then they were set at the time of the call
+	if any([params[i] is not None for i in ['approx','use_annoy','use_faiss']]):
+		#encourage upgrading the call
+		if scanpy_logging:
+			logg.warning('consider switching your call to make use of the computation argument')
+		else:
+			print('consider switching your call to make use of the computation argument')
+		#fill in any missing defaults
+		if params['approx'] is None:
+			params['approx'] = True
+		if params['use_annoy'] is None:
+			params['use_annoy'] = True
+		if params['use_faiss'] is None:
+			params['use_faiss'] = True
+		#now that we have all the old defaults restored, use them to pick a computation
+		if params['approx']:
+			#pick between these two packages based on another param
+			if params['use_annoy']:
+				params['computation'] = 'annoy'
+			else:
+				params['computation'] = 'pynndescent'
+		else:
+			#if the metric is euclidean, then pick between these two packages
+			if params['metric'] == 'euclidean':
+				if params['use_faiss'] and 'faiss' in sys.modules:
+					params['computation'] = 'faiss'
+				else:
+					params['computation'] = 'cKDTree'
+			else:
+				params['computation'] = 'KDTree'
+	return params
+
+def check_knn_metric(params, counts, scanpy_logging):
 	'''
 	Checks if the provided metric can be used with the implied KNN algorithm. Returns parameters
-	with the metric altered and the KNN algorithm stated outright in params['computation'].
+	with the metric validated.
 	
 	Input
 	-----
@@ -200,39 +244,33 @@ def check_knn_metric(params, counts, scanpy_logging=False):
 	'''
 	#take note if we end up going back to Euclidean
 	swapped = False
-	if params['approx']:
-		#we're approximate
-		if params['use_annoy']:
-			params['computation'] = 'annoy'
-			if params['metric'] not in ['angular', 'euclidean', 'manhattan', 'hamming']:
-				swapped = True
-				params['metric'] = 'euclidean'
-		else:
-			params['computation'] = 'pynndescent'
-			#pynndescent wants at least 11 cells per batch, from testing
-			if np.min(counts) < 11:
-				raise ValueError("Not all batches have at least 11 cells in them - required by pynndescent.")
-			#metric needs to be a function or in the named list
-			if not (params['metric'] in pynndescent.distances.named_distances or
-					isinstance(params['metric'], types.FunctionType)):
-				swapped = True
-				params['metric'] = 'euclidean'
-	else:
-		#we're not approximate
-		#metric needs to either be a DistanceMetric object or fall in the KDTree name list
-		if not (params['metric']=='euclidean' or 
-				isinstance(params['metric'], DistanceMetric) or 
+	if params['computation'] == 'annoy':
+		if params['metric'] not in ['angular', 'euclidean', 'manhattan', 'hamming']:
+			swapped = True
+	elif params['computation'] == 'pynndescent':
+		if np.min(counts) < 11:
+			raise ValueError("Not all batches have at least 11 cells in them - required by pynndescent.")
+		#metric needs to be a function or in the named list
+		if not (params['metric'] in pynndescent.distances.named_distances or
+				isinstance(params['metric'], types.FunctionType)):
+			swapped = True
+	elif params['computation'] == 'faiss':
+		if params['metric'] != 'euclidean':
+			swapped = True
+	elif params['computation'] == 'cKDTree':
+		if params['metric'] != 'euclidean':
+			swapped = True
+	elif params['computation'] == 'KDTree':
+		if not (isinstance(params['metric'], DistanceMetric) or 
 				params['metric'] in KDTree.valid_metrics):
 			swapped = True
-			params['metric'] = 'euclidean'
-		if params['metric']=='euclidean':
-			if 'faiss' in sys.modules and params['use_faiss']:
-				params['computation']='faiss'
-			else:
-				params['computation']='cKDTree'
-		else:
-			params['computation']='KDTree'
+			#and now for a next level swap - this can be done more efficiently via cKDTree
+			params['computation'] = 'cKDTree'
+	else:
+		raise ValueError("Incorrect value of the computation argument.")
 	if swapped:
+		#go back to euclidean
+		params['metric'] = 'euclidean'
 		#need to let the user know we swapped the metric
 		if scanpy_logging:
 			logg.warning('unrecognised metric for type of neighbor calculation, switching to euclidean')
@@ -270,9 +308,10 @@ def trimming(cnts,trim):
 	return cnts
 
 def bbknn(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
-		  approx=True, annoy_n_trees=10, pynndescent_n_neighbors=30, 
-		  pynndescent_random_state=0, use_annoy=True, use_faiss=True, 
-		  metric='euclidean', set_op_mix_ratio=1, local_connectivity=1):
+		  computation='annoy', annoy_n_trees=10, pynndescent_n_neighbors=30, 
+		  pynndescent_random_state=0, metric='euclidean', set_op_mix_ratio=1, 
+		  local_connectivity=1, approx=None, use_annoy=None, use_faiss=None,
+		  scanpy_logging=False):
 	'''
 	Scanpy-independent BBKNN variant that runs on a PCA matrix and list of per-cell batch assignments instead of
 	an AnnData object. Non-data-entry arguments behave the same way as ``bbknn.bbknn()``.
@@ -285,6 +324,8 @@ def bbknn(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
 		PCA (or other dimensionality reduction) coordinates for each cell, with cells as rows.
 	batch_list : ``numpy.array`` or ``list``
 		A list of batch assignments for each cell.
+	scanpy_logging : ``bool``, optional (default: ``False``)
+		Whether to use scanpy logging to print updates rather than a ``print()``
 	'''
 	#catch all arguments for easy passing to subsequent functions
 	params = locals()
@@ -300,8 +341,11 @@ def bbknn(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
 	unique, counts = np.unique(batch_list, return_counts=True)
 	if np.min(counts) < params['neighbors_within_batch']:
 		raise ValueError("Not all batches have at least `neighbors_within_batch` cells in them.")
-	#so what knn algorithm will be using? sanity check the metrics while at it
-	params = check_knn_metric(params, counts)
+	#if any of the old legacy computation selection arguments are detected
+	#use them to select the knn computation algorithm
+	params = legacy_computation_selection(params, scanpy_logging)
+	#sanity check the metric
+	params = check_knn_metric(params, counts, scanpy_logging)
 	#obtain the batch balanced KNN graph
 	knn_distances, knn_indices = get_graph(pca=pca,batch_list=batch_list,params=params)
 	#sort the neighbours so that they're actually in order from closest to furthest
