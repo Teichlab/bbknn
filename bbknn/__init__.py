@@ -197,7 +197,7 @@ def ridge_regression(adata, batch_key, confounder_key=[], chunksize=1e8, copy=Fa
 	#loop over the gene space in chunkcount-sized chunks
 	for ind in np.arange(0,adata.shape[1],chunkcount):
 		#extract the expression and turn to dense if need be
-		X_exp = adata.X[:,np.int(ind):np.int(ind+chunkcount)] # scaled data
+		X_exp = adata.X[:,int(ind):int(ind+chunkcount)] # scaled data
 		if scipy.sparse.issparse(X_exp):
 			X_exp = X_exp.todense()
 		#fit the ridge regression model, compute the expression explained by the technical 
