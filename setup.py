@@ -6,7 +6,7 @@ setup(
 	description='Batch balanced KNN',
 	url='https://github.com/Teichlab/bbknn',
 	packages=find_packages(exclude=['docs', 'figures', 'examples']),
-	install_requires=['Cython','numpy','scipy','annoy','pynndescent','umap-learn','scikit-learn','packaging'],
+	install_requires=['Cython','numpy','scipy','pandas','annoy','pynndescent','umap-learn','scikit-learn','packaging'],
 	extras_require=dict(
 		faiss=['faiss']
 	),
