@@ -14,10 +14,10 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
-autodoc_mock_imports = ['pandas','numpy','scipy','annoy','packaging','scipy.spatial',
-						'scipy.sparse','sklearn','sklearn.neighbors','sklearn.linear_model',
-						'umap','umap.umap_','anndata','scanpy','pynndescent']
+#sys.path.insert(0, os.path.abspath('..'))
+#autodoc_mock_imports = ['pandas','numpy','scipy','annoy','packaging','scipy.spatial',
+#						'scipy.sparse','sklearn','sklearn.neighbors','sklearn.linear_model',
+#						'umap','umap.umap_','anndata','scanpy','pynndescent']
 
 # -- Project information -----------------------------------------------------
 
