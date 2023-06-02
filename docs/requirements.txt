@@ -1,5 +1,0 @@
-pip>=19.0
-numpy
-llvmlite
-scikit-learn<=1.0.2
-numba<=0.56.4

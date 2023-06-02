@@ -8,16 +8,7 @@
 
 # -- Path setup --------------------------------------------------------------
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
-import sys
-#sys.path.insert(0, os.path.abspath('..'))
-#autodoc_mock_imports = ['pandas','numpy','scipy','annoy','packaging','scipy.spatial',
-#						'scipy.sparse','sklearn','sklearn.neighbors','sklearn.linear_model',
-#						'umap','umap.umap_','anndata','scanpy','pynndescent']
+# No need for this anymore - the YAML file installing the package lets autodoc see it
 
 # -- Project information -----------------------------------------------------
 
