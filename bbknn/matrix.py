@@ -371,10 +371,10 @@ def bbknn(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
 											 local_connectivity=local_connectivity)
 	#trimming. compute default range if absent
 	if params['trim'] is None:
-		trim = 10 * knn_distances.shape[1]
+		params['trim'] = 10 * knn_distances.shape[1]
 	#skip trimming if set to 0, otherwise trim
-	if trim > 0:
-		cnts = trimming(cnts=cnts,trim=trim)
+	if params['trim'] > 0:
+		cnts = trimming(cnts=cnts,trim=params['trim'])
 	#create a collated parameters dictionary
 	#we'll have a zero distance for our cell of origin, and nonzero for every other neighbour computed
 	params = {'n_neighbors': len(dist[0,:].data)+1, 'method': 'umap', 
