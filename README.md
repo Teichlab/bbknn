@@ -24,11 +24,15 @@ If you use BBKNN in your work, please cite the [paper](https://doi.org/10.1093/b
 
 BBKNN depends on Cython, numpy, scipy, annoy, pynndescent, umap-learn and scikit-learn. The package is available on pip and conda, and can be easily installed as follows:
 
-	pip3 install bbknn
+```bash
+pip3 install bbknn
+```
 
 or
 
-	conda install -c bioconda bbknn
+```bash
+conda install -c bioconda bbknn
+```
 
 BBKNN can also make use of faiss. Consult the [official installation instructions](https://github.com/facebookresearch/faiss/blob/master/INSTALL.md), the easiest way to get it is via conda.
 
@@ -36,25 +40,34 @@ BBKNN can also make use of faiss. Consult the [official installation instruction
 
 BBKNN has the option to immediately slot into the spot occupied by `scanpy.neighbors()` in the [Seurat-inspired scanpy workflow](https://nbviewer.jupyter.org/github/theislab/scanpy_usage/blob/master/170505_seurat/seurat.ipynb). It computes a batch aligned variant of the neighbourhood graph, with its uses within scanpy including clustering, diffusion map pseudotime inference and UMAP visualisation. The basic syntax to run BBKNN on scanpy's AnnData object (with PCA computed via `scanpy.tl.pca()`) is as follows:
 
-	import bbknn
-	bbknn.bbknn(adata)
+```python3
+import bbknn
+
+bbknn.bbknn(adata)
+```
 
 You can provide which `adata.obs` column to use for batch discrimination via the `batch_key` parameter. This defaults to `'batch'`, which is created by scanpy when you merge multiple AnnData objects (e.g. if you were to import multiple samples separately and then concatenate them).
 
 Integration can be improved by using ridge regression on both a technical effect and a biological grouping prior to BBKNN, following a workflow from [Park _et al._, 2020](https://science.sciencemag.org/content/367/6480/eaay3224.abstract). In the event of not having a biological grouping at hand, a coarse clustering obtained from a BBKNN-corrected graph can be used in its place. This creates the following basic workflow syntax:
 
-	import bbknn
-	import scanpy
-	bbknn.bbknn(adata)
-	scanpy.tl.leiden(adata)
-	bbknn.ridge_regression(adata, batch_key=['batch'], confounder_key=['leiden'])
-	scanpy.tl.pca(adata)
-	bbknn.bbknn(adata)
+```python3
+import bbknn
+import scanpy
+
+bbknn.bbknn(adata)
+scanpy.tl.leiden(adata)
+bbknn.ridge_regression(adata, batch_key=['batch'], confounder_key=['leiden'])
+scanpy.tl.pca(adata)
+bbknn.bbknn(adata)
+```
 
 Alternately, you can just provide a PCA matrix with cells as rows and a matching vector of batch assignments for each of the cells and call BBKNN as follows (with `connectivities` being the primary graph output of interest):
 
-	import bbknn.matrix
-	distances, connectivities, parameters = bbknn.matrix.bbknn(pca_matrix, batch_list)
+```python3
+import bbknn.matrix
+
+distances, connectivities, parameters = bbknn.matrix.bbknn(pca_matrix, batch_list)
+```
 
 An HTML render of the BBKNN function docstring, detailing all the parameters, can be accessed at [ReadTheDocs](https://bbknn.readthedocs.io/en/latest/). BBKNN use, along with using ridge regression to improve the integration, is shown in a [demonstration notebook](https://nbviewer.jupyter.org/github/Teichlab/bbknn/blob/master/examples/demo.ipynb).
 
@@ -62,19 +75,21 @@ An HTML render of the BBKNN function docstring, detailing all the parameters, ca
 
 At this point, there is no plan to create a BBKNN R package. However, it can be ran quite easily via reticulate. Using the base functions is the same as in python. If you're in possession of a PCA matrix and a batch assignment vector and want to get UMAP coordinates out of it, you can use the following code snippet to do so. The weird PCA computation part and replacing it with your original values is unfortunately necessary due to how AnnData innards operate from a reticulate level. Provide your python path in `use_python()`
 
-	library(reticulate)
-	use_python("/usr/bin/python3")
+```R
+library(reticulate)
+use_python("/usr/bin/python3")
 
-	anndata = import("anndata",convert=FALSE)
-	bbknn = import("bbknn", convert=FALSE)
-	sc = import("scanpy",convert=FALSE)
+anndata = import("anndata",convert=FALSE)
+bbknn = import("bbknn", convert=FALSE)
+sc = import("scanpy",convert=FALSE)
 
-	adata = anndata$AnnData(X=pca, obs=batch)
-	sc$tl$pca(adata)
-	adata$obsm$X_pca = pca
-	bbknn$bbknn(adata,batch_key=0)
-	sc$tl$umap(adata)
-	umap = py_to_r(adata$obsm[["X_umap"]])
+adata = anndata$AnnData(X=pca, obs=batch)
+sc$tl$pca(adata)
+adata$obsm$X_pca = pca
+bbknn$bbknn(adata,batch_key=0)
+sc$tl$umap(adata)
+umap = py_to_r(adata$obsm[["X_umap"]])
+```
 
 If you wish to change any integer arguments (such as `neighbors_within_batch`), you'll have to `as.integer()` the value so python understands it as an integer.
 
