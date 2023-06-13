@@ -346,6 +346,9 @@ def bbknn(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
 	#do we have the same number of cells in pca and batch_list?
 	if pca.shape[0] != len(batch_list):
 		raise ValueError("Different cell counts indicated by `pca.shape[0]` and `len(batch_list)`.")
+	#make sure n_pcs is not larger than the actual dimensions of the data
+	#as that can introduce some uninformative knock-on errors in UMAP
+	params['n_pcs'] = np.min(params['n_pcs'], pca.shape[1])
 	#convert batch_list to np.array of strings for ease of mask making later
 	batch_list = np.asarray([str(i) for i in batch_list])
 	#assert that all batches have at least neighbors_within_batch cells in there
