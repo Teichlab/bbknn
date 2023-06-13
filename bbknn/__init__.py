@@ -5,7 +5,6 @@ import pandas as pd
 import numpy as np
 import scipy
 import sys
-from packaging import version
 from sklearn.linear_model import Ridge
 try:
 	from scanpy import logging as logg
@@ -123,23 +122,15 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', copy=False, **kwargs):
 	adata.uns['neighbors']['params'] = bbknn_out[2]
 	adata.uns['neighbors']['params']['use_rep'] = use_rep
 	adata.uns['neighbors']['params']['bbknn']['batch_key'] = batch_key
-	#store the graphs in .uns['neighbors'] or .obsp, conditional on anndata version
-	if version.parse(str(anndata.__version__)) < version.parse('0.7.0'):
-		adata.uns['neighbors']['distances'] = bbknn_out[0]
-		adata.uns['neighbors']['connectivities'] = bbknn_out[1]
-		logg.info('	finished', time=start,
-			deep=('added to `.uns[\'neighbors\']`\n'
-			'	\'distances\', distances for each pair of neighbors\n'
-			'	\'connectivities\', weighted adjacency matrix'))
-	else:
-		adata.obsp['distances'] = bbknn_out[0]
-		adata.obsp['connectivities'] = bbknn_out[1]
-		adata.uns['neighbors']['distances_key'] = 'distances'
-		adata.uns['neighbors']['connectivities_key'] = 'connectivities'
-		logg.info('	finished', time=start,
-			deep=('added to `.uns[\'neighbors\']`\n'
-			'	`.obsp[\'distances\']`, distances for each pair of neighbors\n'
-			'	`.obsp[\'connectivities\']`, weighted adjacency matrix'))
+	#store the graphs in an anndata 0.7.0+ compliant manner
+	adata.obsp['distances'] = bbknn_out[0]
+	adata.obsp['connectivities'] = bbknn_out[1]
+	adata.uns['neighbors']['distances_key'] = 'distances'
+	adata.uns['neighbors']['connectivities_key'] = 'connectivities'
+	logg.info('	finished', time=start,
+		deep=('added to `.uns[\'neighbors\']`\n'
+		'	`.obsp[\'distances\']`, distances for each pair of neighbors\n'
+		'	`.obsp[\'connectivities\']`, weighted adjacency matrix'))
 	return adata if copy else None
 
 def ridge_regression(adata, batch_key, confounder_key=[], chunksize=1e8, copy=False, **kwargs):

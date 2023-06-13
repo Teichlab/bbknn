@@ -17,8 +17,7 @@ dependencies = [
     "annoy",
     "pynndescent",
     "umap-learn",
-    "scikit-learn",
-    "packaging"
+    "scikit-learn"
 ]
 requires-python = ">=3.7"
 
