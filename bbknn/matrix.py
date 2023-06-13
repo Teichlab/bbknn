@@ -370,6 +370,8 @@ def bbknn(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
 											 knn_indices.shape[1], set_op_mix_ratio=set_op_mix_ratio,
 											 local_connectivity=local_connectivity)
 	#trimming. compute default range if absent
+	#both this and the parameter dictionary need a neighbour total for each cell
+	#easiest retrieved from the shape of the knn variables
 	if params['trim'] is None:
 		params['trim'] = 10 * knn_distances.shape[1]
 	#skip trimming if set to 0, otherwise trim
