@@ -13,7 +13,7 @@ except ImportError:
 
 from . import matrix
 
-def bbknn(adata, batch_key='batch', use_rep='X_pca', copy=False, **kwargs):
+def bbknn(adata, batch_key='batch', use_rep='X_pca', key_added=None, copy=False, **kwargs):
 	'''
 	Batch balanced KNN, altering the KNN procedure to identify each cell's top neighbours in
 	each batch separately instead of the entire cell pool with no accounting for batch. 
@@ -113,20 +113,28 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', copy=False, **kwargs):
 	batch_list = adata.obs[batch_key].values
 	#call BBKNN proper, telling it to use scanpy logging for its internal things
 	bbknn_out = matrix.bbknn(pca=pca, batch_list=batch_list, scanpy_logging=True, **kwargs)
-	#store the parameters in .uns['neighbors']['params'], add use_rep and batch_key
-	adata.uns['neighbors'] = {}
-	adata.uns['neighbors']['params'] = bbknn_out[2]
-	adata.uns['neighbors']['params']['use_rep'] = use_rep
-	adata.uns['neighbors']['params']['bbknn']['batch_key'] = batch_key
+	#store the parameters, add use_rep and batch_key
+	#mirror scanpy neighbour key_added logic
+	if key_added is None:
+		key_added = 'neighbors'
+		conns_key = 'connectivities'
+		dists_key = 'distances'
+	else:
+		conns_key = key_added + '_connectivities'
+		dists_key = key_added + '_distances'
+	adata.uns[key_added] = {}
+	adata.uns[key_added]['params'] = bbknn_out[2]
+	adata.uns[key_added]['params']['use_rep'] = use_rep
+	adata.uns[key_added]['params']['bbknn']['batch_key'] = batch_key
 	#store the graphs in an anndata 0.7.0+ compliant manner
-	adata.obsp['distances'] = bbknn_out[0]
-	adata.obsp['connectivities'] = bbknn_out[1]
-	adata.uns['neighbors']['distances_key'] = 'distances'
-	adata.uns['neighbors']['connectivities_key'] = 'connectivities'
+	adata.obsp[dists_key] = bbknn_out[0]
+	adata.obsp[conns_key] = bbknn_out[1]
+	adata.uns[key_added]['distances_key'] = dists_key
+	adata.uns[key_added]['connectivities_key'] = conns_key
 	logg.info('	finished', time=start,
-		deep=('added to `.uns[\'neighbors\']`\n'
-		'	`.obsp[\'distances\']`, distances for each pair of neighbors\n'
-		'	`.obsp[\'connectivities\']`, weighted adjacency matrix'))
+		deep=(f'added to `.uns[{key_added!r}]`\n'
+		f'    `.obsp[{dists_key!r}]`, distances for each pair of neighbors\n'
+		f'    `.obsp[{conns_key!r}]`, weighted adjacency matrix'))
 	return adata if copy else None
 
 def ridge_regression(adata, batch_key, confounder_key=[], chunksize=1e8, copy=False, **kwargs):
