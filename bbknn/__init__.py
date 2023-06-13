@@ -29,7 +29,7 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', copy=False, **kwargs):
 	Input
 	-----
 	adata : ``AnnData``
-		Needs the PCA computed and stored in ``adata.obsm["X_pca"]``.
+		Needs your dimensionality reduction of choice computed and stored in ``.obsm``.
 	batch_key : ``str``, optional (default: "batch")
 		``adata.obs`` column name discriminating between your batches.
 	neighbors_within_batch : ``int``, optional (default: 3)
