@@ -375,9 +375,8 @@ def bbknn(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
 	#skip trimming if set to 0, otherwise trim
 	if params['trim'] > 0:
 		cnts = trimming(cnts=cnts,trim=params['trim'])
-	#create a collated parameters dictionary
-	#we'll have a zero distance for our cell of origin, and nonzero for every other neighbour computed
-	params = {'n_neighbors': len(dist[0,:].data)+1, 'method': 'umap', 
+	#create a collated parameters dictionary, formatted like scanpy's neighbours one
+	p_dict = {'n_neighbors': knn_distances.shape[1], 'method': 'umap', 
 			  'metric': params['metric'], 'n_pcs': params['n_pcs'], 
 			  'bbknn': {'trim': params['trim'], 'computation': params['computation']}}
-	return (dist, cnts, params)
+	return (dist, cnts, p_dict)
