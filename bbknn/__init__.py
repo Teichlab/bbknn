@@ -10,10 +10,6 @@ try:
 	from scanpy import logging as logg
 except ImportError:
 	pass
-try:
-	import anndata
-except ImportError:
-	pass
 
 from . import matrix
 
