@@ -10,7 +10,11 @@ from scipy.spatial import cKDTree
 from scipy.sparse import coo_matrix
 from umap.umap_ import fuzzy_simplicial_set
 from sklearn.neighbors import KDTree
-from sklearn.neighbors import DistanceMetric
+try:
+    from sklearn.neighbors import DistanceMetric
+except ImportError:
+    from sklearn.metrics import DistanceMetric
+
 try:
 	from scanpy import logging as logg
 except ImportError:
@@ -74,7 +78,7 @@ def compute_connectivities_umap(knn_indices, knn_dists,
 
 def create_tree(data, params):
 	'''
-	Create a faiss/cKDTree/KDTree/annoy/pynndescent index for nearest neighbour lookup. 
+	Create a faiss/cKDTree/KDTree/annoy/pynndescent index for nearest neighbour lookup.
 	All undescribed input as in ``bbknn.bbknn()``. Returns the resulting index.
 
 	Input
@@ -92,7 +96,7 @@ def create_tree(data, params):
 		ckd.build(params['annoy_n_trees'])
 	elif params['computation'] == 'pynndescent':
 		ckd = pynndescent.NNDescent(data, metric=params['metric'], n_jobs=-1,
-									n_neighbors=params['pynndescent_n_neighbors'], 
+									n_neighbors=params['pynndescent_n_neighbors'],
 									random_state=params['pynndescent_random_state'])
 		ckd.prepare()
 	elif params['computation'] == 'faiss':
@@ -147,7 +151,7 @@ def get_graph(pca, batch_list, params):
 	Identify the KNN structure to be used in graph construction. All input as in ``bbknn.bbknn()``
 	and ``bbknn.matrix.bbknn()``. Returns a tuple of distances and indices of neighbours for
 	each cell.
-	
+
 	Input
 	-----
 	params : ``dict``
@@ -187,7 +191,7 @@ def get_graph(pca, batch_list, params):
 def print_warning(message, scanpy_logging):
 	'''
 	Print a specified warning to the screen, using either warnings or scanpy.
-	
+
 	Input
 	-----
 	message : ``str``
@@ -202,9 +206,9 @@ def print_warning(message, scanpy_logging):
 
 def legacy_computation_selection(params, scanpy_logging):
 	'''
-	Do pre-1.6.0 computation algorithm selection based on possible legacy arguments. Looks 
+	Do pre-1.6.0 computation algorithm selection based on possible legacy arguments. Looks
 	at the following (default None) parameters: approx, use_annoy, use_faiss
-	
+
 	Input
 	-----
 	params : ``dict``
@@ -245,7 +249,7 @@ def check_knn_metric(params, counts, scanpy_logging):
 	'''
 	Checks if the provided metric can be used with the implied KNN algorithm. Returns parameters
 	with the metric validated.
-	
+
 	Input
 	-----
 	params : ``dict``
@@ -274,7 +278,7 @@ def check_knn_metric(params, counts, scanpy_logging):
 		if params['metric'] != 'euclidean':
 			swapped = True
 	elif params['computation'] == 'KDTree':
-		if not (isinstance(params['metric'], DistanceMetric) or 
+		if not (isinstance(params['metric'], DistanceMetric) or
 				params['metric'] in KDTree.valid_metrics):
 			swapped = True
 			#and now for a next level swap - this can be done more efficiently via cKDTree
@@ -318,8 +322,8 @@ def trimming(cnts,trim):
 	return cnts
 
 def bbknn(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
-		  computation='annoy', annoy_n_trees=10, pynndescent_n_neighbors=30, 
-		  pynndescent_random_state=0, metric='euclidean', set_op_mix_ratio=1, 
+		  computation='annoy', annoy_n_trees=10, pynndescent_n_neighbors=30,
+		  pynndescent_random_state=0, metric='euclidean', set_op_mix_ratio=1,
 		  local_connectivity=1, approx=None, use_annoy=None, use_faiss=None,
 		  scanpy_logging=False):
 	'''
@@ -378,7 +382,7 @@ def bbknn(pca, batch_list, neighbors_within_batch=3, n_pcs=50, trim=None,
 	if params['trim'] > 0:
 		cnts = trimming(cnts=cnts,trim=params['trim'])
 	#create a collated parameters dictionary, formatted like scanpy's neighbours one
-	p_dict = {'n_neighbors': knn_distances.shape[1], 'method': 'umap', 
-			  'metric': params['metric'], 'n_pcs': params['n_pcs'], 
+	p_dict = {'n_neighbors': knn_distances.shape[1], 'method': 'umap',
+			  'metric': params['metric'], 'n_pcs': params['n_pcs'],
 			  'bbknn': {'trim': params['trim'], 'computation': params['computation']}}
 	return (dist, cnts, p_dict)
