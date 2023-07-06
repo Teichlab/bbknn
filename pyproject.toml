@@ -17,7 +17,7 @@ dependencies = [
     "annoy",
     "pynndescent",
     "umap-learn",
-    "scikit-learn"
+    "scikit-learn>=1.0.2",  # https://github.com/Teichlab/bbknn/issues/54
 ]
 requires-python = ">=3.7"
 
