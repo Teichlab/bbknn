@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.0
+- create `computation` argument, encourage `approx`/`use_annoy`/`use_faiss` users to move to it
+- simplify per-batch query logic (C. Xu)
+- add `key_added` argument to mirror `scanpy.pp.neighbors()`
+- update setup to flit, add missing pandas dependency
+- update sklearn syntax to match >=1.0.2, require appropriate version (Matchy, R. Williams)
+- update scipy syntax to match >=1.6.0, require appropriate version
+- remove pre-0.7.0 anndata support
+- internal coding consistency improvements and readthedocs modernisation
+
 ## 1.5.1
 - correctly check for pynndescent metric space in `bbknn.bbknn()`
 

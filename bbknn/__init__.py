@@ -1,5 +1,5 @@
 """Batch balanced KNN"""
-__version__ = "1.5.1"
+__version__ = "1.6.0"
 
 import pandas as pd
 import numpy as np
