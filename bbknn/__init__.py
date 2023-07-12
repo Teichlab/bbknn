@@ -43,13 +43,10 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', key_added=None, copy=False,
 		more independent the individual populations, at the cost of more conserved batch effect.
 		If ``None``, sets the parameter value automatically to 10 times ``neighbors_within_batch`` 
 		times the number of batches. Set to 0 to skip.
-	approx : ``bool``, optional (default: ``True``)
-		If ``True``, use approximate neighbour finding - annoy or pyNNDescent. This results 
-		in a quicker run time for large datasets while also potentially increasing the degree of 
-		batch correction.
-	use_annoy : ``bool``, optional (default: ``True``)
-		Only used when ``approx=True``. If ``True``, will use annoy for neighbour finding. If
-		``False``, will use pyNNDescent instead.
+	computation : ``str``, optional (default: "annoy")
+		Which KNN algorithm to use. BBKNN supports the approximate neighbour search of "annoy" 
+		and "pynndescent", and the exact neighbour search of "faiss", "cKDTree" and "KDTree". 
+		Available metric choices depend on the package used here.
 	annoy_n_trees : ``int``, optional (default: 10)
 		Only used with annoy neighbour identification. The number of trees to construct in the 
 		annoy forest. More trees give higher precision when querying, at the cost of increased 
@@ -61,10 +58,6 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', key_added=None, copy=False,
 	pynndescent_random_state : ``int``, optional (default: 0)
 		Only used with pyNNDescent neighbour identification. The RNG seed to use when creating 
 		the graph.
-	use_faiss : ``bool``, optional (default: ``True``)
-		If ``approx=False`` and the metric is "euclidean", use the faiss package to compute
-		nearest neighbours if installed. This improves performance at a minor cost to numerical
-		precision as faiss operates on float32.
 	metric : ``str`` or ``sklearn.neighbors.DistanceMetric`` or ``types.FunctionType``, optional (default: "euclidean")
 		What distance metric to use. The options depend on the choice of neighbour algorithm.
 		
@@ -82,12 +75,12 @@ def bbknn(adata, batch_key='batch', use_rep='X_pca', key_added=None, copy=False,
 		'kantorovich', 'wasserstein', 'tsss', 'true_angular', 'hamming', 'jaccard', 'dice', 'matching', 'kulsinski', 
 		'rogerstanimoto', 'russellrao', 'sokalsneath', 'sokalmichener', 'yule'])
 		
-		KDTree supports members of the ``sklearn.neighbors.KDTree.valid_metrics`` list, or parameterised
-		``sklearn.neighbors.DistanceMetric`` `objects
-		<https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.DistanceMetric.html>`_:
+		KDTree supports members of the ``sklearn.neighbors.KDTree.valid_metrics()`` list, or parameterised
+		``sklearn.metrics.DistanceMetric`` `objects
+		<https://scikit-learn.org/stable/modules/generated/sklearn.metrics.DistanceMetric.html>`_:
 
-		>>> sklearn.neighbors.KDTree.valid_metrics
-		['p', 'chebyshev', 'cityblock', 'minkowski', 'infinity', 'l2', 'euclidean', 'manhattan', 'l1']
+		>>> sklearn.neighbors.KDTree.valid_metrics()
+		['euclidean', 'l2', 'minkowski', 'p', 'manhattan', 'cityblock', 'l1', 'chebyshev', 'infinity']
 	set_op_mix_ratio : ``float``, optional (default: 1)
 		UMAP connectivity computation parameter, float between 0 and 1, controlling the
 		blend between a connectivity matrix formed exclusively from mutual nearest neighbour
