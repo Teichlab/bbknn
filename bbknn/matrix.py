@@ -9,7 +9,7 @@ import pynndescent
 from scipy.spatial import cKDTree
 from scipy.sparse import coo_matrix
 from umap.umap_ import fuzzy_simplicial_set
-from sklearn.neighbors import DistanceMetric
+from sklearn.metrics import DistanceMetric
 from sklearn.neighbors import KDTree
 try:
 	from scanpy import logging as logg
