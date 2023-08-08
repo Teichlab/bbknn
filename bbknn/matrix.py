@@ -96,7 +96,12 @@ def create_tree(data, params):
 									random_state=params['pynndescent_random_state'])
 		ckd.prepare()
 	elif params['computation'] == 'faiss':
-		ckd = faiss.IndexFlatL2(data.shape[1])
+		try: # uses GPU if faiss_gpu available.
+			res = faiss.StandardGpuResources()
+			ckd_ = faiss.IndexFlatL2(data.shape[1])
+			ckd = faiss.index_cpu_to_gpu(res, 0, ckd_)
+		except:
+			ckd = faiss.IndexFlatL2(data.shape[1])
 		ckd.add(data)
 	elif params['computation'] == 'cKDTree':
 		ckd = cKDTree(data)
