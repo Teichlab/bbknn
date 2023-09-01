@@ -190,7 +190,7 @@ def ridge_regression(adata, batch_key, confounder_key=[], chunksize=1e8, copy=Fa
 		#extract the expression and turn to dense if need be
 		X_exp = adata.X[:,int(ind):int(ind+chunkcount)] # scaled data
 		if scipy.sparse.issparse(X_exp):
-			X_exp = X_exp.todense()
+			X_exp = np.asarray(X_exp.todense())
 		#fit the ridge regression model, compute the expression explained by the technical 
 		#effect, and the remaining residual
 		LR.fit(dummy,X_exp)	
