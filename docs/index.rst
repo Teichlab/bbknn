@@ -9,7 +9,7 @@ BBKNN
 =====
 
 .. autosummary::
-   :toctree: modules
+   :toctree:
    
    bbknn.bbknn
    bbknn.ridge_regression
