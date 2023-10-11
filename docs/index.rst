@@ -8,14 +8,9 @@
 BBKNN
 =====
 
-.. module:: bbknn
 .. autosummary::
    :toctree: modules
    
-   bbknn
-   ridge_regression
-.. module:: bbknn.matrix
-.. autosummary::
-   :toctree: modules
-   
-   bbknn
+   bbknn.bbknn
+   bbknn.ridge_regression
+   bbknn.matrix.bbknn
