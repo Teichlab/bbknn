@@ -8,6 +8,10 @@
 BBKNN
 =====
 
+Project home page `here <https://github.com/Teichlab/bbknn>`_, tutorial notebook `here <https://nbviewer.org/github/Teichlab/bbknn/blob/master/examples/demo.ipynb>`_.
+
+Function docstrings
+-------------------
 .. autosummary::
    :toctree:
    
